@@ -80,9 +80,12 @@ Arquitectura objetivo, con varios puntos explícitamente **pendientes de decisi�
 - **Performance:** la separación UI/dominio/acceso a datos permite optimizar la capa de acceso a datos (caché/revalidación) sin afectar la UI. La optimización de imágenes externas, el lazy loading y la prevención de layout shift se apoyan en `next/image`, ya disponible en el stack decidido (no requieren una nueva dependencia).
 - **Testing:** la separación de capas busca que la lógica de dominio (filtrado, orden, cálculo de totales) sea testeable de forma aislada, sin depender de red ni de Server/Client Components. La herramienta concreta (Jest, React Testing Library, Cypress, Playwright) sigue sin decidirse.
 
-## Resiliencia y manejo de errores (iniciativa de proactividad)
+## Resiliencia y manejo de errores
 
-El manejo de errores de API mediante `error.js` y los Empty States son iniciativas de proactividad descritas en el PDF, no parte del alcance mínimo obligatorio. Su seguimiento se mantiene en [CHECKLIST.md](./CHECKLIST.md) (sección de iniciativas adicionales), para no presentarlas como requisito.
+Se distinguen dos niveles, para no convertir una iniciativa de proactividad en requisito obligatorio:
+
+- **Mínimo defensivo esperado (alcance base, no proactividad):** si una llamada a Fake Store API falla o devuelve una respuesta inesperada, la UI no debe quedar en un estado roto o en blanco sin explicación — es el comportamiento defensivo razonable de cualquier integración con una fuente externa. La implementación concreta de este mínimo (qué componente lo maneja, qué mensaje se muestra) queda para la fase de implementación y no está decidida por este documento.
+- **Iniciativas de proactividad (no obligatorias):** manejo de errores mediante `error.js` de Next.js, Empty States elaborados, y cualquier tratamiento más allá del mínimo defensivo anterior, descritos en el PDF como ejemplos de proactividad. Su seguimiento se mantiene en [CHECKLIST.md](./CHECKLIST.md) (sección de iniciativas adicionales), para no presentarlas como requisito.
 
 ## Diagrama de arquitectura (objetivo)
 

@@ -88,13 +88,33 @@ No se implementa backend ni base de datos propia. La disponibilidad y el contrat
 El reto exige un repositorio público como entregable.
 
 **Decision:**
-Usar Git como control de versiones, con repositorio remoto en GitHub (`origin`), commit inicial ya realizado y sincronizado con `origin/main`.
+Usar Git como control de versiones, con repositorio remoto en GitHub (`origin`). Al momento de tomar esta decisión, el commit inicial (`fb9d8a4`) ya estaba sincronizado con `origin/main`.
 
 **Rationale:**
 Requisito explícito de entregable del reto.
 
 **Consequences:**
-El historial de commits y el estado del repositorio remoto son parte de la evidencia de avance del reto.
+El historial de commits y el estado del repositorio remoto son parte de la evidencia de avance del reto. La sincronización con `origin/main` es el estado en el momento de cada commit, no una condición permanente: nuevos commits locales (como `243c12a` y `497a5a6`) adelantan a `main` por encima de `origin/main` hasta que se haga `git push`. El estado de sincronización vigente se verifica con `git status -sb`, no se asume por esta decisión.
+
+---
+
+## DEC-006 — Migración a pnpm
+
+**Status:** Accepted
+
+**Context:**
+El proyecto se inició con npm (`package-lock.json` generado por `create-next-app`). Se decidió adoptar pnpm como package manager del proyecto.
+
+**Decision:**
+Usar pnpm como único package manager del proyecto, gestionado vía Corepack. `package-lock.json` fue eliminado y reemplazado por `pnpm-lock.yaml`; se agregó `pnpm-workspace.yaml` (con la aprobación de build scripts requerida por pnpm). El campo `packageManager` en `package.json` fija la versión exacta. Todos los comandos documentados del proyecto (instalación, desarrollo, build, start, lint) usan pnpm.
+
+**Rationale:**
+Estandarizar el package manager del proyecto antes de comenzar la implementación funcional.
+
+**Consequences:**
+- `pnpm-lock.yaml` es el lockfile vigente; ya no existe `package-lock.json`.
+- `pnpm-workspace.yaml` debe conservarse (necesario para reproducir la instalación).
+- Esta decisión ya está implementada y commiteada (`497a5a6 — chore: migrate project to pnpm`).
 
 ---
 

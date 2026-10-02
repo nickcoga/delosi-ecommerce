@@ -17,6 +17,7 @@ Lo siguiente está confirmado en el repositorio tal como fue generado por `creat
 - **TypeScript** 5.x, con `strict: true` en `tsconfig.json`
 - **Tailwind CSS** v4 (vía `@tailwindcss/postcss`, importado en `app/globals.css`)
 - **ESLint** 9.x con `eslint-config-next` (`core-web-vitals` + `typescript`)
+- **pnpm** como package manager del proyecto (migrado desde npm), fijado vía Corepack en `package.json`: `"packageManager": "pnpm@12.8.1+sha512.f64ba907507f5ceafe06c8d38e6052d0179444580ec1279ddd5bfc11cb48aa8a2644b66598e07e761da84872a9fc57d5f902b87fa49d024198d558612aabbe45"`
 - Repositorio Git inicializado, con commit inicial (`Initial commit from Create Next App`)
 - Remoto de GitHub configurado (`origin`) y commit inicial ya sincronizado con `origin/main`
 
@@ -62,7 +63,9 @@ delosi-ecommerce/
 ├── next.config.ts
 ├── postcss.config.mjs
 ├── tsconfig.json
-└── package.json
+├── package.json
+├── pnpm-lock.yaml
+└── pnpm-workspace.yaml
 ```
 
 > Esta estructura refleja únicamente el bootstrap actual. La organización por dominios/módulos para PLP, PDP y carrito aún no existe en código y está descrita como propuesta en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

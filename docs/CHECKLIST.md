@@ -67,7 +67,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Tailwind CSS | 🟢 | Verificado en `app/globals.css` / `postcss.config.mjs` |
 | ESLint | 🟢 | Verificado en `eslint.config.mjs` |
 | Git repository + commit inicial | 🟢 | — |
-| Remoto GitHub + push inicial | 🟢 | Rama `main` sincronizada con `origin/main` |
+| Remoto GitHub + push inicial | 🟢 | Push inicial (`fb9d8a4`) realizado. Desde entonces se agregaron commits locales (`243c12a`, `docs: add project documentation and architecture`; `497a5a6`, `chore: migrate project to pnpm`) todavía no sincronizados con `origin/main` — verificar `git status -sb` antes de asumir que el remoto refleja el estado local |
 
 ### Arquitectura y organización del código
 
@@ -102,6 +102,8 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 
 > Nota: la configuración **avanzada** de caché/políticas de revalidación es una iniciativa de proactividad adicional (ver sección 5), distinta de la estrategia básica de arriba, que sí forma parte del alcance mínimo.
 
+> Nota UX: performance (CLS, lazy loading, optimización de imágenes) es, junto con SEO, uno de los pilares de evaluación del reto (ver [README.md](../README.md) y [ARCHITECTURE.md](./ARCHITECTURE.md)). Los ítems de esta sección contribuyen directamente a la experiencia de usuario, no solo a métricas técnicas.
+
 ### Testing
 
 | Ítem | Estado | Nota |
@@ -109,6 +111,8 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Estrategia definitiva de testing (alcance y herramienta) | ⚪ | Ver punto ambiguo #4 |
 | Testing unitario | ⚪ | — |
 | Testing de integración / e2e | ⚪ | — |
+
+> Nota: cuando se defina la estrategia de testing, debe considerarse la cobertura de **critical business flows** del reto — como mínimo, filtrado/búsqueda de productos (PLP) y agregar productos al carrito. Esto no decide todavía framework, herramienta, cantidad de tests ni implementación concreta.
 
 ---
 

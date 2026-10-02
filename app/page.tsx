@@ -1,5 +1,14 @@
 import Image from "next/image";
 
+import { AddToCartButton } from "@/components/AddToCartButton";
+
+const DEMO_PRODUCT = {
+  productId: 1,
+  title: "Producto de demostración",
+  price: 19.99,
+  image: "/next.svg",
+};
+
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -37,6 +46,12 @@ export default function Home() {
             </a>{" "}
             center.
           </p>
+        </div>
+        <div className="flex flex-col items-center gap-2 sm:items-start">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Demo temporal de integración del carrito (DEC-007) — no es la PDP definitiva.
+          </p>
+          <AddToCartButton product={DEMO_PRODUCT} />
         </div>
         <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
           <a

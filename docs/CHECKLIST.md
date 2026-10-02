@@ -51,8 +51,10 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Estado global del carrito (concepto) | 🔵 | Concepto decidido (accesible desde PDP y Header); tecnología concreta pendiente — ver sección 2 |
-| Contador de ítems reflejado en el Header | 🔵 | — |
+| Estado global del carrito | 🟢 | Implementado con Zustand (`lib/cart/store.ts`) y validado manualmente — ver [DEC-007](./DECISIONS.md) |
+| Contador de ítems reflejado en el Header | 🟢 | Implementado (`CartCounter`) y validado manualmente, incluyendo recuperación tras refresh |
+
+> Nota: validado hasta ahora mediante la superficie de demostración temporal en `app/page.tsx` (sin PDP real todavía). El botón "Agregar al carrito" de la PDP (sección 1 → PDP) sigue en 🔵 hasta que exista la ruta `/products/[id]` real.
 
 ---
 
@@ -79,13 +81,13 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | SOLID / Clean Code | 🔵 | Principio adoptado como guía de implementación; ver punto ambiguo #2 |
 | Estructura final de carpetas por dominio | ⚪ | Decisión abierta — ver [ARCHITECTURE.md](./ARCHITECTURE.md) |
 
-### Estado del carrito (decisión pendiente)
+### Estado del carrito (decidido e implementado)
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Tecnología de estado global (Context API / Zustand / Redux / otra) | ⚪ | No se asume Zustand ni ninguna otra librería todavía |
-| Estrategia de persistencia (memoria / `localStorage` / cookies) | ⚪ | Decisión abierta |
-| Justificación formal de la estrategia elegida | ⚪ | Se redactará en [DECISIONS.md](./DECISIONS.md) una vez decidida la tecnología |
+| Tecnología de estado global | 🟢 | Zustand — ver [DEC-007](./DECISIONS.md) |
+| Estrategia de persistencia | 🟢 | `localStorage` vía middleware `persist` — ver [DEC-007](./DECISIONS.md) |
+| Justificación formal de la estrategia elegida | 🟢 | Documentada en [DEC-007](./DECISIONS.md) |
 
 ---
 

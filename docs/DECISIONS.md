@@ -118,16 +118,63 @@ Estandarizar el package manager del proyecto antes de comenzar la implementació
 
 ---
 
+## DEC-007 — Estado global y persistencia del carrito
+
+**Status:** Accepted — implementado y validado
+
+**Context:**
+El reto requiere un estado global del carrito, accesible desde la PDP (acción "Agregar al carrito") y desde el Header (contador de ítems), con persistencia del carrito y compatibilidad con la arquitectura Server Components / Client Components definida en [ARCHITECTURE.md](./ARCHITECTURE.md). El estado mutable del carrito pertenece necesariamente al cliente: los Server Components no pueden mantener estado interactivo ni reaccionar a eventos de usuario.
+
+**Alternativas consideradas:**
+- **Context API + `useReducer`:** solución válida, sin dependencia externa, con un reducer explícito y testeable. Se descartó como recomendación (no como inválida) por requerir más código propio para implementar persistencia y rehidratación, incluyendo construir manualmente la señal/gestión del estado de hidratación.
+- **Zustand (elegida):** menor boilerplate para un store global, con selectors y una separación clara entre el store y sus consumidores; adecuado para un único dominio de estado acotado como el carrito.
+- **Redux Toolkit / Jotai / Valtio:** descartadas por no aportar ventaja diferencial para un solo dominio de estado acotado como el carrito — habrían introducido más complejidad o una abstracción distinta sin una necesidad real que lo justifique en este alcance.
+
+**Decision (final, implementada):**
+Usar Zustand para el estado global del carrito (`lib/cart/store.ts`), con el middleware `persist` sobre `localStorage` para la persistencia, y un flag `hasHydrated` en el estado para controlar explícitamente cuándo mostrar el valor real del contador.
+
+Justificación precisa (sin sobreafirmar lo que la librería resuelve):
+- Zustand simplifica la gestión del estado global en sí (menos boilerplate que Context + `useReducer`, selectors sin esfuerzo manual).
+- `persist` simplifica la mecánica de serialización y lectura del estado persistido (evita escribir a mano el guardado/lectura de `localStorage`).
+- `localStorage` es suficiente para el alcance actual: no se requiere sincronización entre dispositivos ni backend propio (ver DEC-004), solo persistencia dentro del mismo navegador del usuario.
+- `localStorage` sigue siendo exclusivamente client-side: el servidor no puede acceder a ese valor. El render inicial parte de un estado por defecto (carrito vacío); la rehidratación ocurre después, en el cliente.
+- `persist` facilita la mecánica de persistencia/rehidratación, pero **no elimina** la responsabilidad de manejar conscientemente el estado de hidratación — eso se resolvió explícitamente con el flag `hasHydrated` (ver "Problema encontrado durante implementación" más abajo).
+
+**Arquitectura:**
+- Se mantiene el enfoque server-first ya definido en [ARCHITECTURE.md](./ARCHITECTURE.md): PLP y PDP permanecen principalmente como Server Components.
+- `CartCounter` (en el Header) y `AddToCartButton` son las únicas islas Client Component que conocen el store.
+- El store (`lib/cart/store.ts`) no debe importarse desde ningún Server Component.
+
+**Problema encontrado durante implementación:**
+`onRehydrateStorage` referenciaba inicialmente el binding exportado `useCartStore` durante la propia inicialización del store. Debido a que la rehidratación con `localStorage` se resuelve de forma síncrona, esa referencia se evaluaba antes de que la asignación de `useCartStore` terminara, lo que producía una violación de Temporal Dead Zone. La excepción resultante era absorbida silenciosamente por la cadena interna de `persist`, dejando `hasHydrated` permanentemente en `false` — aunque los datos persistidos sí se recuperaban correctamente, por lo que `items`/el conteo interno existían mientras el contador permanecía visualmente vacío. La corrección fue capturar la referencia `set` dentro de la función creadora del store y usarla en `onRehydrateStorage`, evitando referenciar `useCartStore` durante su propia inicialización.
+
+**Validación:**
+- `pnpm lint` → sin errores.
+- `pnpm build` → exitoso, TypeScript estricto sin errores.
+- Persistencia comprobada manualmente en navegador: agregar producto, refrescar la página, y el contador recupera la cantidad correcta tras la hidratación.
+- Flujo completo validado: agregar al carrito → persistir en `localStorage` → reload → rehidratar → mostrar contador actualizado.
+
+**Consequences:**
+- Zustand queda incorporado como dependencia del proyecto (`zustand` en `package.json`).
+- El componente del contador en el Header maneja explícitamente el estado de hidratación (antes/después de leer `localStorage`).
+- `localStorage` permite conservar el carrito entre refresh y cierre/reapertura del navegador (mismo origen).
+
+**Límites de esta decisión (lo que sigue sin decidirse):**
+- Sincronización entre pestañas — no implementada, sigue fuera de alcance.
+- `clearCart` — no forma parte del alcance actual.
+- Estructura definitiva de carpetas por dominio — sigue abierta (ver [ARCHITECTURE.md](./ARCHITECTURE.md)).
+- Estrategia/framework de testing — sigue abierto.
+
+---
+
 ## Plantilla para futuras decisiones
 
 Usar este formato al registrar cada una de las siguientes decisiones pendientes (ver [ARCHITECTURE.md](./ARCHITECTURE.md) para el contexto de cada una):
 
-- Estado del carrito (tecnología de estado global).
 - Estrategia de caché/revalidación.
 - Estrategia de testing.
 - Server vs. Client Components (reglas específicas por componente).
 - Estructura final de carpetas por dominio.
-- Estrategia de persistencia del carrito.
 
 ```markdown
 ## DEC-XXX — <título>

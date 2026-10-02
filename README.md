@@ -25,25 +25,25 @@ Lo siguiente está confirmado en el repositorio tal como fue generado por `creat
 ## Requisitos para ejecutar localmente
 
 - Node.js (versión compatible con Next.js 16 / React 19)
-- npm (gestor de paquetes usado por el proyecto; ver `package-lock.json`)
+- pnpm (gestor de paquetes usado por el proyecto; ver `pnpm-lock.yaml` y el campo `packageManager` en `package.json`). Se recomienda habilitarlo vía Corepack (`corepack enable`), incluido con Node.js.
 
 ## Comandos básicos
 
 ```bash
 # Instalar dependencias
-npm install
+pnpm install
 
 # Levantar entorno de desarrollo
-npm run dev
+pnpm dev
 
 # Compilar para producción
-npm run build
+pnpm build
 
 # Levantar build de producción
-npm run start
+pnpm start
 
 # Lint
-npm run lint
+pnpm lint
 ```
 
 La aplicación en desarrollo queda disponible en [http://localhost:3000](http://localhost:3000).

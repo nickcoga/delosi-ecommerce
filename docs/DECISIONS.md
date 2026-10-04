@@ -1,6 +1,6 @@
 # Decisions
 
-Decision log (ADR-style) para el reto Delosi Ecommerce. Solo se registran aquí decisiones ya confirmadas por el proyecto o el reto. Las alternativas evaluadas pero no decididas se documentan como pendientes en [ARCHITECTURE.md](./ARCHITECTURE.md), no aquí.
+Decision log (ADR-style) para el reto Delosi Ecommerce. Se registran aquí las decisiones confirmadas (`Accepted`) y las decisiones abiertas que requieren evaluación explícita (`Proposed`, sin decidir). Las preguntas sin decisión registrada y los valores propuestos pendientes de confirmación se documentan en [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
@@ -94,7 +94,7 @@ Usar Git como control de versiones, con repositorio remoto en GitHub (`origin`).
 Requisito explícito de entregable del reto.
 
 **Consequences:**
-El historial de commits y el estado del repositorio remoto son parte de la evidencia de avance del reto. La sincronización con `origin/main` es el estado en el momento de cada commit, no una condición permanente: nuevos commits locales (como `243c12a` y `497a5a6`) adelantan a `main` por encima de `origin/main` hasta que se haga `git push`. El estado de sincronización vigente se verifica con `git status -sb`, no se asume por esta decisión.
+El historial de commits y el estado del repositorio remoto son parte de la evidencia de avance del reto. La sincronización con `origin/main` es el estado en el momento de cada commit, no una condición permanente: los commits locales posteriores (por ejemplo `243c12a` y `497a5a6`) pueden adelantar a `main` respecto de `origin/main` hasta que se haga `git push`. En la verificación del 2026-10-04 ambas ramas coincidían. El estado de sincronización vigente se verifica con `git status -sb`, no se asume por esta decisión.
 
 ---
 
@@ -167,11 +167,59 @@ Justificación precisa (sin sobreafirmar lo que la librería resuelve):
 
 ---
 
+## DEC-008 — Estrategia de acceso y consumo de datos
+
+**Status:** Accepted — acceso a datos server-side con Server Components y capacidades nativas de Next.js. La política concreta de caché y revalidación queda pendiente de una decisión específica posterior.
+
+**Context:**
+El PLP (`/products`) y la PDP (`/products/[id]`) necesitan datos de Fake Store API (DEC-004), y el estado de filtros del PLP vive en la URL (ver [ARCHITECTURE.md](./ARCHITECTURE.md), "Contrato conceptual del PLP"). Había que decidir si el acceso ocurre en servidor o en cliente, qué herramienta lo gestiona y qué resiliencia exige.
+
+Hechos conocidos:
+- Next.js 16.3.8, sin Cache Components (`next.config.ts` sin `cacheComponents`). Según la guía de Next incluida en `node_modules`, `fetch` sin opciones de caché no cachea en servidor (`auto no cache`); `cache: 'force-cache'` y `next.revalidate` son opt-in.
+- Los `searchParams` son una `Promise` y leerlos vuelve la página dinámica en tiempo de request.
+- Dentro de un mismo render, `fetch` con la misma URL y opciones se memoiza.
+- En desarrollo, la caché HMR puede mostrar datos antiguos entre refrescos.
+- Fake Store API no ofrece búsqueda ni ordenamiento en sus endpoints: el filtrado y el orden ocurren fuera de la API.
+- Observación del 2026-10-04: durante la auditoría, Fake Store API respondió HTTP 522 en `/products` y `/products/categories`, en varios intentos. No hay medición de disponibilidad histórica.
+- El estado del carrito ya vive en cliente con Zustand (DEC-007). No es caché de datos de catálogo.
+
+**Alternativas evaluadas:**
+- **A. `fetch` nativo de Next.js dentro de Server Components (elegida).** Encaja con el modelo server-first, renderiza el contenido en el HTML inicial y no añade dependencias. La política de caché (`cache`, `next.revalidate`, etiquetas) es una capa adicional de Next.js que se decidirá aparte.
+- **B. React Query (TanStack Query) (no incorporada en esta fase).** Resuelve caché de cliente, deduplicación, refetch y estados de carga en el navegador. Exige Client Components y un provider, y mueve la lectura del catálogo al cliente. Ver la justificación de la sección siguiente.
+
+**Decision:**
+1. El catálogo (PLP) y el detalle de producto (PDP) obtienen sus datos en el servidor, desde Server Components, usando las capacidades nativas de Next.js.
+2. Los filtros, la búsqueda y el ordenamiento del PLP se representan mediante URL Search Params. La URL es la fuente de verdad del estado de navegación.
+3. React Query **no** se incorpora en esta fase.
+4. El carrito se mantiene como client state, gestionado con la decisión ya aceptada [DEC-007](#dec-007--estado-global-y-persistencia-del-carrito) (Zustand + `persist`). El server state del catálogo y el client state del carrito son categorías distintas y no se mezclan: el catálogo no se guarda en el store del carrito, y el carrito no se consulta desde Server Components.
+5. La estrategia concreta de `cache` y revalidación queda **pendiente** y se decidirá cuando haya una necesidad real de frescura del catálogo que la justifique. Este registro no fija ningún valor de `revalidate`.
+6. Los errores de la API se normalizan en la capa de acceso a datos y se exponen a la aplicación como estados controlados (ver [ARCHITECTURE.md](./ARCHITECTURE.md), "Estados esperados del PLP").
+7. Se distingue siempre entre respuesta válida sin productos (Empty State) y fallo de API, incluyendo timeout, 5xx y 522 (Error State).
+8. Un fallback de demostración explícito queda documentado como **iniciativa de resiliencia**, no como decisión de datos. Cumple estas restricciones: no es silencioso (la UI indica que los datos no son los de la API), no escribe ni persiste datos en nombre de la API real, no añade un campo de origen al modelo `Product`, y no sustituye a la API de forma permanente.
+
+**Rationale:**
+La elección se basa en los requisitos del reto, no en preferencia personal ni en la simplicidad del proyecto:
+- El reto exige carga y procesamiento inicial del PLP con Server Components, y filtros, búsqueda y orden en URL Search Params. Con esto, el listado se renderiza en servidor y es enlazable y compartible.
+- El SEO depende de que el contenido esté en el HTML inicial, lo que favorece `fetch` en servidor frente a lecturas en cliente.
+- Los requisitos actuales no demandan las capacidades que justifican React Query: gestión de server state en cliente, polling, refetch automático complejo, mutations remotas (Fake Store API solo expone `GET`, según DEC-004), infinite queries, invalidación compleja de caché en cliente, o sincronización de server state entre varios Client Components.
+- Incorporar React Query ahora añadiría un provider, una frontera de Client Components para el catálogo, una segunda capa de caché que duplica la del servidor y complejidad de hidratación, sin resolver un problema que hoy exista.
+- La resiliencia es requisito real: la API respondió HTTP 522 durante la evaluación del 2026-10-04. Por eso el manejo de errores se normaliza en la capa de acceso a datos, y no depende de la librería elegida.
+
+**Reconsideración de React Query:** se volverá a evaluar solo si aparecen requisitos concretos, por ejemplo búsqueda reactiva sin navegación que deba consultar la API, polling o refetch periódico, escrituras remotas (checkout o similares), scroll infinito, o varios Client Components que necesiten compartir el mismo server state. En ese caso se abrirá una decisión nueva que supersedería esta parte.
+
+**Consequences:**
+- El acceso a datos del PLP y de la PDP se implementa en Server Components y en la capa de acceso a datos, sin hooks de fetching en cliente.
+- La política de caché y revalidación se registra en una decisión específica posterior, con su valor justificado según la frescura necesaria del catálogo.
+- La capa de acceso a datos debe normalizar: respuesta válida con cero productos (Empty), y fallo de red, timeout, 5xx o 522 (Error).
+- El fallback de demostración, si se implementa, es una iniciativa de resiliencia (💡 en [CHECKLIST.md](./CHECKLIST.md)) con las restricciones del punto 8.
+- La lógica de dominio (normalización, filtrado, orden) no depende de esta decisión y se diseña de forma independiente.
+
+---
+
 ## Plantilla para futuras decisiones
 
 Usar este formato al registrar cada una de las siguientes decisiones pendientes (ver [ARCHITECTURE.md](./ARCHITECTURE.md) para el contexto de cada una):
 
-- Estrategia de caché/revalidación.
 - Estrategia de testing.
 - Server vs. Client Components (reglas específicas por componente).
 - Estructura final de carpetas por dominio.

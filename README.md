@@ -8,9 +8,9 @@ Implementación del reto técnico propuesto por Delosi para 2026: una mini aplic
 
 Demostrar una arquitectura modular, escalable y mantenible en Next.js, aplicando buenas prácticas de performance, SEO y UX —los tres pilares de evaluación explícitos del reto—, además de resiliencia ante fallos, TypeScript estricto y principios SOLID/Clean Code, con una sustentación posterior mediante code review.
 
-## Stack actual confirmado por el bootstrap
+## Stack actual
 
-Lo siguiente está confirmado en el repositorio tal como fue generado por `create-next-app` y verificado al momento de este bootstrap documental:
+Lo siguiente está verificado en el repositorio:
 
 - **Next.js** 16.3.8 (App Router, carpeta `app/`)
 - **React** 19.2.8
@@ -18,10 +18,11 @@ Lo siguiente está confirmado en el repositorio tal como fue generado por `creat
 - **Tailwind CSS** v4 (vía `@tailwindcss/postcss`, importado en `app/globals.css`)
 - **ESLint** 9.x con `eslint-config-next` (`core-web-vitals` + `typescript`)
 - **pnpm** como package manager del proyecto (migrado desde npm), fijado vía Corepack en `package.json`: `"packageManager": "pnpm@12.8.1+sha512.f64ba907507f5ceafe06c8d38e6052d0179444580ec1279ddd5bfc11cb48aa8a2644b66598e07e761da84872a9fc57d5f902b87fa49d024198d558612aabbe45"`
+- **Zustand** 5.x con middleware `persist` (estado global del carrito, [DEC-007](docs/DECISIONS.md))
 - Repositorio Git inicializado, con commit inicial (`Initial commit from Create Next App`)
-- Remoto de GitHub configurado (`origin`) y commit inicial ya sincronizado con `origin/main`
+- Remoto de GitHub configurado (`origin`). En la última verificación `main` coincidía con `origin/main`; confirmar con `git status -sb`
 
-> Cualquier otra librería, patrón o herramienta mencionada en este documento fuera de esta lista **no está instalada ni implementada todavía**. Ver [docs/DECISIONS.md](docs/DECISIONS.md) para decisiones pendientes y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para el espacio de decisión arquitectónica.
+> Cualquier otra librería, patrón o herramienta mencionada en este documento fuera de esta lista y de las decisiones registradas en [docs/DECISIONS.md](docs/DECISIONS.md) **no está instalada ni implementada todavía**. Ver [docs/DECISIONS.md](docs/DECISIONS.md) para decisiones pendientes y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para el espacio de decisión arquitectónica.
 
 ## Requisitos para ejecutar localmente
 
@@ -54,6 +55,8 @@ La aplicación en desarrollo queda disponible en [http://localhost:3000](http://
 ```
 delosi-ecommerce/
 ├── app/                # App Router (layout, page, estilos globales)
+├── components/         # Componentes React (Header, CartCounter, AddToCartButton)
+├── lib/                # Lógica compartida (carrito: lib/cart/store.ts)
 ├── public/              # Assets estáticos
 ├── docs/                 # Documentación técnica del reto
 │   ├── CHECKLIST.md
@@ -68,7 +71,7 @@ delosi-ecommerce/
 └── pnpm-workspace.yaml
 ```
 
-> Esta estructura refleja únicamente el bootstrap actual. La organización por dominios/módulos para PLP, PDP y carrito aún no existe en código y está descrita como propuesta en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> Estructura actual: bootstrap y carrito (DEC-007). La organización por dominios para PLP y PDP aún no existe en código; su diseño conceptual está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## API pública utilizada
 
@@ -80,9 +83,15 @@ delosi-ecommerce/
 
 ## Estado del proyecto
 
-🔵 **Fase actual: planificación y arquitectura.**
+**Fase actual: diseño del PLP.**
 
-El proyecto se encuentra en la etapa de bootstrap documental. Aún no se ha implementado funcionalidad del reto (PLP, PDP, carrito, testing, etc.). Los documentos en `docs/` existen para definir el alcance, dejar explícitas las decisiones ya tomadas y las que siguen pendientes, y servir de checklist de avance.
+- Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente mediante una demo temporal en `app/page.tsx`.
+- Documentado, sin implementar: contrato de URL del PLP, modelo `Product`, capas y estados.
+- Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
+- Pendiente: política concreta de caché y revalidación de datos, en una decisión posterior.
+- Sin implementar: PLP, PDP, testing y iniciativas de proactividad.
+
+Los documentos en `docs/` definen el alcance, registran las decisiones tomadas y las pendientes, y sirven de checklist de avance.
 
 ## Requisitos del reto
 
@@ -99,7 +108,7 @@ Ver detalle completo y seguimiento en [docs/CHECKLIST.md](docs/CHECKLIST.md).
 
 ## Decisiones técnicas
 
-El stack base (Next.js App Router, TypeScript, Tailwind CSS, Fake Store API, Git/GitHub) ya está confirmado durante este bootstrap y registrado en [docs/DECISIONS.md](docs/DECISIONS.md). Además, ya existen decisiones iniciales de diseño/arquitectura — como el enfoque Server-first con Server Components para la carga inicial, la integración con Fake Store API y la separación conceptual entre UI, dominio/servicios y acceso a datos —, documentadas con su contexto en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Esto no implica que todas las decisiones de implementación del reto estén cerradas: el estado del carrito, la estrategia de caché/revalidación, el testing y la estructura final de carpetas por dominio siguen pendientes y se documentan como tales en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) y [docs/DECISIONS.md](docs/DECISIONS.md).
+El stack base (Next.js App Router, TypeScript, Tailwind CSS, Fake Store API, Git/GitHub) ya está confirmado durante este bootstrap y registrado en [docs/DECISIONS.md](docs/DECISIONS.md). Además, ya existen decisiones iniciales de diseño/arquitectura — como el enfoque Server-first con Server Components para la carga inicial, la integración con Fake Store API y la separación conceptual entre UI, dominio/servicios y acceso a datos —, documentadas con su contexto en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Esto no implica que todas las decisiones de implementación del reto estén cerradas: el estado del carrito quedó decidido e implementado ([DEC-007](docs/DECISIONS.md)); el acceso a datos del PLP está decidido en server-side ([DEC-008](docs/DECISIONS.md)), con la política de caché pendiente; el testing y la estructura final de carpetas por dominio siguen pendientes. El contrato conceptual del PLP está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Testing
 

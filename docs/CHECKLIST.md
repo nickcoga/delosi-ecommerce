@@ -63,7 +63,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 |---|---|---|
 | Estado global del carrito | 🟢 | Implementado con Zustand (`lib/cart/store.ts`) y validado manualmente — ver [DEC-007](./DECISIONS.md) |
 | Contador de ítems reflejado en el Header | 🟢 | Implementado (`CartCounter`) y validado manualmente, incluyendo recuperación tras refresh |
-| Persistencia en `localStorage["delosi-cart"]` | 🟢 | Validada manualmente y en producción (carga directa, refresh, navegación PLP → PDP → PLP); cubierta por tests |
+| Persistencia en `localStorage["delosi-cart"]` | 🟢 | Validada manualmente y en build de producción local (carga directa, refresh, navegación PLP → PDP → PLP); cubierta por tests |
 | Mismo producto: incrementa cantidad sin duplicar la línea | 🟢 | Cubierto por `tests/cart.test.ts` |
 | Hidratación del `CartCounter` | 🟢 | Sin hydration mismatch reproducido en desarrollo ni producción. Observación menor no bloqueante: en desarrollo el contador aparece ~200 ms después de la carga |
 | Integración PDP → `AddToCartButton` → Zustand → `CartCounter` | 🟢 | Validada con fixtures en desktop y móvil: clic en "Agregar al carrito", contador del Header actualizado. Con datos reales de Fake Store API: pendiente |

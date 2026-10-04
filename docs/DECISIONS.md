@@ -311,7 +311,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 
 **Consequences:**
 - La capa de datos (tipos, DTO, mapper, parser, `getProducts`, `getCategories`, `getProduct`) está implementada en `lib/products/`. La UI de `/products` y de `/products/[id]` también está implementada (checkpoint PLP + PDP). Pendiente: validación de éxito con datos reales. Los detalles de implementación están en [ARCHITECTURE.md](./ARCHITECTURE.md), "Decisiones de implementación".
-- El skeleton del PLP se mantiene, pero su `loading.tsx` está aislado mediante el route group `app/(catalog)/products/` (`page.tsx` y `loading.tsx`). Así el Suspense boundary no envuelve la PDP y `notFound()` no se convierte en soft 404 HTTP 200. La PDP permanece en `app/products/[id]/` (`page.tsx` y `not-found.tsx`), fuera del route group. Validado en producción: `/products/abc`, `/products/0`, `/products/1.5` y `/products/-3` responden 404; `/products` mantiene su skeleton y la URL pública no cambia.
+- El skeleton del PLP se mantiene, pero su `loading.tsx` está aislado mediante el route group `app/(catalog)/products/` (`page.tsx` y `loading.tsx`). Así el Suspense boundary no envuelve la PDP y `notFound()` no se convierte en soft 404 HTTP 200. La PDP permanece en `app/products/[id]/` (`page.tsx` y `not-found.tsx`), fuera del route group. Validado en build de producción local: `/products/abc`, `/products/0`, `/products/1.5` y `/products/-3` responden 404; `/products` mantiene su skeleton y la URL pública no cambia.
 - La política de caché queda fuera de este registro y se rige por [DEC-009](#dec-009--política-de-caché-y-revalidación-del-catálogo).
 - Cualquier cambio en el contrato de parámetros requiere actualizar este registro.
 

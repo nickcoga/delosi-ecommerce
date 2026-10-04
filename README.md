@@ -165,4 +165,4 @@ Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift)
 
 ## Iniciativas de proactividad
 
-Parcialmente implementado: skeletons con `loading.tsx` en PLP y PDP (validación visual pendiente). Pendiente: Suspense granular, manejo de errores con `error.tsx`, empty states elaborados y caché avanzada.
+Parcialmente implementado: skeleton con `loading.tsx` en el PLP (`app/(catalog)/products/`); la PDP no tiene skeleton propio para mantener el HTTP 404 real en IDs inválidos (validación visual pendiente). Pendiente: Suspense granular, manejo de errores con `error.tsx`, empty states elaborados y caché avanzada.

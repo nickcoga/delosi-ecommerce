@@ -78,7 +78,7 @@ Implementada en el checkpoint PLP + PDP. La validación de los estados success y
 - Ruta `/products`, implementada como Server Component que lee `searchParams` y compone la UI en servidor.
 - Filtros por categoría, búsqueda por texto y ordenamiento reflejados en la URL, para que la página sea enlazable, compartible y navegable con el botón "atrás".
 - Filtros y búsqueda implementados como Client Component (`ProductFilters`) que navega con `router.push` usando `buildProductsHref()`. Los controles reciben sus valores desde la URL en el servidor, así que el HTML inicial ya refleja los parámetros. Se eligió frente a enlaces y formularios GET sin JS; la decisión queda registrada en "Decisiones de implementación".
-- Loading state con `loading.tsx` estándar del App Router, con dos skeletons independientes: `app/products/loading.tsx` (PLP) y `app/products/[id]/loading.tsx` (PDP). El de `[id]` es necesario porque el `loading.tsx` de `products/` también aplica a sus segmentos hijos. Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual desktop y mobile, el comportamiento y el foco durante navegación de filtros, y el CLS real quedan pendientes; requieren datos success de Fake Store API.
+- Loading state con `loading.tsx` estándar del App Router, solo en el PLP: `app/(catalog)/products/loading.tsx`, junto a `app/(catalog)/products/page.tsx`. La PDP (`app/products/[id]/`) no tiene loading propio y queda fuera del route group, para que su `notFound()` produzca HTTP 404 real (ver "Decisiones de implementación"). Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual desktop y mobile, el comportamiento y el foco durante navegación de filtros, y el CLS real quedan pendientes; requieren datos success de Fake Store API.
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
 - **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido e implementado):** caché de datos de Next.js mediante `fetch` con `next.revalidate: 3600`, aplicada en `fetchFakeStoreJson` y compartida por productos, categorías y detalle. La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
 
@@ -386,6 +386,8 @@ Tomadas durante la implementación, sin abrir una DEC nueva:
 - **Metadata de 404:** `not-found.tsx` exporta su propio `metadata`, para no heredar el título genérico del layout raíz.
 - **Respuesta `200 + null` de Fake Store:** hoy se clasifica como `invalid_payload`, es decir, estado de error. No se ha verificado si la API la devuelve. Pendiente.
 
+- **Route group `(catalog)` para el PLP:** el PLP vive en `app/(catalog)/products/` (`page.tsx` y `loading.tsx`). El route group no aparece en la URL: `/products` no cambia. Motivo: el `loading.tsx` de un segmento es un Suspense boundary que envuelve a sus hijos; con el skeleton en `app/products/`, la PDP quedaba dentro de ese boundary y `notFound()` producía un soft 404 HTTP 200. Con el PLP en el route group, `app/products/[id]/` (`page.tsx` y `not-found.tsx`) queda fuera y devuelve HTTP 404 real para IDs inválidos.
+
 ## Resumen de decisiones pendientes
 
 Explícitamente no resueltas por este documento, a definir y registrar en [DECISIONS.md](./DECISIONS.md):
@@ -394,7 +396,7 @@ Explícitamente no resueltas por este documento, a definir y registrar en [DECIS
 - Comportamiento real de Fake Store API ante ids inexistentes: `404` frente a `200 + null` (pendiente de verificar).
 - Verificación en runtime del comportamiento de la Data Cache ante fallos de revalidación ([DEC-009](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
-- Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado en PLP y PDP; su validación visual está pendiente.
+- Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado solo en el PLP (`app/(catalog)/products/`); su validación visual está pendiente.
 - Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).
 - Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright). Hoy hay tests permanentes con `node:test` para el catálogo y el store del carrito.
 - Estructura final de carpetas por dominio.

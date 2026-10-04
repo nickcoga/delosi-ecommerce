@@ -27,14 +27,14 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Server Components para carga/procesamiento inicial | 🟡 | Implementado en `app/products/page.tsx`; éxito con datos reales pendiente de Fake Store API |
+| Server Components para carga/procesamiento inicial | 🟡 | Implementado en `app/(catalog)/products/page.tsx`; éxito con datos reales pendiente de Fake Store API |
 | Filtrado por categoría | 🟡 | Implementado en `ProductFilters`; la selección con datos reales está bloqueada por Fake Store API (`getCategories`) |
 | Búsqueda por texto | 🟡 | Implementado en `ProductFilters` (`q`) y verificado por URL; resultados con datos reales pendientes |
 | Ordenamiento por criterio de negocio | 🟡 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)). Implementado en `lib/products/apply-query.ts` y en la UI (`ProductFilters`) |
 | Integración `GET /products` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente (la API respondió 522 durante la verificación) |
 | Integración `GET /products/categories` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente |
 | Normalización de errores de API en estados controlados (error, empty) | 🟡 | Implementada en `lib/products/fake-store/client.ts`; probada con servidor local y fetch simulado |
-| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🟡 | Implementado ([DEC-010](./DECISIONS.md)): `app/products/page.tsx`, parser y `buildProductsHref`; éxito con datos reales pendiente |
+| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🟡 | Implementado ([DEC-010](./DECISIONS.md)): `app/(catalog)/products/page.tsx`, parser y `buildProductsHref`; éxito con datos reales pendiente |
 | Parser de query params (`parseProductsQuery()`) | 🟡 | Implementado en `lib/products/parse-query.ts`; probado con casos de borde |
 | Capa de acceso a datos (`getProducts`, `getCategories`) | 🟡 | Implementada en `lib/products/catalog.ts`; validación contra la API real pendiente |
 | Modelo de dominio `Product` independiente del DTO de Fake Store API | 🟡 | Implementado en `lib/products/types.ts` y `lib/products/fake-store/mapper.ts` |
@@ -47,7 +47,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Ítem | Estado | Nota |
 |---|---|---|
 | Ruta dinámica `/products/[id]` | 🟡 | Implementada (`app/products/[id]/page.tsx`); estado success con datos reales pendiente |
-| Página 404 para producto inexistente | 🟡 | Implementada (`not-found.tsx`); validada en runtime: HTTP 404 y título propio |
+| Página 404 para producto inexistente | 🟡 | Implementada (`not-found.tsx`). HTTP 404 real validado en producción para IDs no válidos tras mover el PLP a `(catalog)`. Ausencia real de producto en la API: pendiente |
 | Estado de error diferenciado de la PDP | 🟡 | Implementado; validado en runtime con la API caída. Nunca se convierte en 404 ni en producto vacío |
 | Metadata dinámica — título | 🟡 | Implementada en `generateMetadata()`; metadata de producto real pendiente de validar |
 | Metadata dinámica — descripción | 🟡 | Implementada en `generateMetadata()`; pendiente de validar con producto real |
@@ -69,7 +69,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Integración PDP → `AddToCartButton` → Zustand → `CartCounter` | 🟡 | Mapeo verificado y store probado; el clic visual en la PDP con datos reales o fixtures no está confirmado |
 | Tests del carrito | 🟢 | 15/15 en `tests/cart.test.ts`: estado inicial, duplicados, cantidades, `setQuantity`, `removeItem`, contador y persistencia |
 
-> Nota: validado hasta ahora mediante la superficie de demostración temporal en `app/page.tsx` La PDP `/products/[id]` ya existe; el clic real en su botón "Agregar al carrito" queda pendiente de validar con datos reales de la API.
+> Nota: el carrito se validó inicialmente con la demo temporal de `app/page.tsx`, retirada en el bloque Home + A' (`/` redirige a `/products`). La PDP `/products/[id]` ya existe; el clic real en su botón "Agregar al carrito" queda pendiente de validar con datos reales de la API.
 
 ---
 
@@ -85,7 +85,7 @@ Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las 
 | `git diff --check` | PASS |
 | `getProduct` (12 casos, `fetch` simulado) | PASS |
 | PLP visual desktop y mobile (estado de error, API caída) | PASS |
-| PDP: 404 para ids no válidos y HTTP 404 en `not-found.tsx` | PASS |
+| PDP: HTTP 404 real para ids no válidos (`/products/abc`, `/0`, `/1.5`, `/-3`) tras mover el PLP a `(catalog)` | PASS (producción) |
 | PDP: metadata del not-found no usa el título genérico del layout | PASS |
 | PDP: estado de error sin convertirlo en 404 ni en producto vacío | PASS (API caída) |
 | Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (tests permanentes 15/15) |
@@ -219,7 +219,7 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Streaming + Suspense + Skeletons | 🟡 | `loading.tsx` de PLP (`app/products/loading.tsx`) y PDP (`app/products/[id]/loading.tsx`) implementados con skeletons estructurales; sin Suspense granular. Validado estructuralmente (lint, typecheck, build, HTML de producción). **Pendiente:** validación visual desktop y mobile, comportamiento y foco durante navegación de filtros, comparación skeleton → contenido real y CLS real (requieren datos success de Fake Store API) |
+| Streaming + Suspense + Skeletons | 🟡 | `loading.tsx` del PLP (`app/(catalog)/products/loading.tsx`) implementado con skeleton estructural. La PDP no tiene skeleton propio: queda fuera del Suspense del PLP para mantener el HTTP 404 real ([DEC-010](./DECISIONS.md)). Sin Suspense granular. Validado estructuralmente (lint, typecheck, build, HTML de producción). **Pendiente:** validación visual desktop y mobile, comportamiento y foco durante navegación de filtros, comparación skeleton → contenido real y CLS real (requieren datos success de Fake Store API) |
 | Resiliencia ante fallos de API (`error.js`) | 💡 | — |
 | Fallback de demostración explícito ante fallo de API | 💡 | Iniciativa documentada en [DEC-008](./DECISIONS.md); no silencioso, no persiste datos, no altera `Product`, no sustituye a la API de forma permanente. Sin implementar |
 | Empty States | 💡 | — |

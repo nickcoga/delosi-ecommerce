@@ -218,7 +218,7 @@ La elección se basa en los requisitos del reto, no en preferencia personal ni e
 
 ## DEC-009 — Política de caché y revalidación del catálogo
 
-**Status:** Accepted — política de caché y revalidación decidida y documentada. **La implementación está pendiente**; no existe caché en código todavía.
+**Status:** Accepted — política de caché y revalidación decidida e implementada en `lib/products/fake-store/client.ts` (`next.revalidate: 3600`). La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
 
 **Context:**
 [DEC-008](#dec-008--estrategia-de-acceso-y-consumo-de-datos) decidió **cómo** se accede a los datos: en servidor, desde Server Components, con las capacidades nativas de Next.js. DEC-009 fija **con qué política de frescura y caché** se consume el catálogo. Hechos conocidos:
@@ -272,7 +272,7 @@ Server-side caching con Next.js Data Cache mediante `fetch`, y revalidación bas
 **Consequences:**
 - Positivas: menor dependencia del API externo; menos solicitudes; mejor performance; arquitectura simple; sin client-side server state.
 - Negativas: la frescura del catálogo tiene un retraso de hasta una ventana de revalidación.
-- Hasta la fase de implementación, no existe caché en código. No debe marcarse como implementada.
+- La caché está implementada en `fetchFakeStoreJson`. Pendiente: verificar en runtime que los errores no quedan almacenados y el comportamiento ante fallo de revalidación.
 - En la implementación debe verificarse en la versión instalada de Next.js: (a) qué se sirve cuando falla la revalidación en segundo plano, (b) que los errores no quedan almacenados en caché.
 - El retry manual ([ARCHITECTURE.md](./ARCHITECTURE.md), "Retry") no fuerza un bypass de caché en esta fase. Como los errores no se almacenan, un retry tras un error vuelve a consultar al origen.
 - DEC-008 y DEC-010 no se modifican por esta decisión.
@@ -281,7 +281,7 @@ Server-side caching con Next.js Data Cache mediante `fetch`, y revalidación bas
 
 ## DEC-010 — Contrato de URL, parser y arquitectura del PLP
 
-**Status:** Accepted — diseño aprobado conceptualmente. Implementación pendiente.
+**Status:** Accepted — diseño aprobado e implementado en el checkpoint PLP + PDP. La validación de los estados success y empty con datos reales queda pendiente de Fake Store API.
 
 **Context:**
 El PLP necesita un contrato de parámetros estable y compartible, separado de la forma de la API externa, y con estados de error distinguibles de un resultado vacío. Detalle completo en [ARCHITECTURE.md](./ARCHITECTURE.md), secciones "Contrato conceptual del PLP" a "Retry".
@@ -293,8 +293,8 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 4. `q`: búsqueda case-insensitive sobre `Product.title`. No se amplía a descripción ni otros campos en esta fase.
 5. `sort`: valores `price-asc` y `price-desc`. Los valores desconocidos se ignoran.
 6. Los filtros se combinan con AND, en el orden categoría → búsqueda → orden.
-7. Un parser, `parseProductsQuery()`, convierte `URLSearchParams` en `ProductsQuery`. La UI y el acceso a datos no leen `URLSearchParams` directamente. Su implementación está pendiente.
-8. La página consume `getProducts(query)` y nunca conoce URLs de Fake Store API. `getCategories()` cubre el endpoint de categorías. Ambas funciones están pendientes de implementación.
+7. Un parser, `parseProductsQuery()`, convierte `URLSearchParams` en `ProductsQuery`. La UI y el acceso a datos no leen `URLSearchParams` directamente. Implementado en `lib/products/parse-query.ts`.
+8. La página consume `getProducts(query)` y nunca conoce URLs de Fake Store API. `getCategories()` cubre el endpoint de categorías. Ambas funciones están implementadas en `lib/products/catalog.ts`.
 9. `FakeStoreProductDTO` se transforma a `Product` mediante un mapper en la capa de acceso a datos. `Product` no depende del contrato externo y no incluye campo de origen. Campos: `id`, `title`, `price`, `description`, `category`, `imageUrl`, `rating.rate`, `rating.count`.
 10. Fake Store API no soporta búsqueda ni ordenamiento: estas operaciones se realizan sobre `Product` en el dominio.
 11. Estados: `loading`, `success`, `empty`, `error`. **HTTP 200 con `[]` es `empty`. Un 522, timeout, 5xx o fallo de red es `error`, nunca `[]`.** Los errores externos se normalizan en la capa de acceso a datos.
@@ -309,7 +309,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 - El retry manual evita múltiples solicitudes automáticas innecesarias ante errores como el 522 observado.
 
 **Consequences:**
-- La capa de datos (tipos, DTO, mapper, parser, `getProducts`, `getCategories`) está implementada en `lib/products/`. La ruta `/products` y su UI todavía no existen.
+- La capa de datos (tipos, DTO, mapper, parser, `getProducts`, `getCategories`, `getProduct`) está implementada en `lib/products/`. La UI de `/products` y de `/products/[id]` también está implementada (checkpoint PLP + PDP). Pendiente: validación de éxito con datos reales. Los detalles de implementación están en [ARCHITECTURE.md](./ARCHITECTURE.md), "Decisiones de implementación".
 - La política de caché queda fuera de este registro y se rige por [DEC-009](#dec-009--política-de-caché-y-revalidación-del-catálogo).
 - Cualquier cambio en el contrato de parámetros requiere actualizar este registro.
 

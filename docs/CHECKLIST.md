@@ -27,30 +27,33 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Server Components para carga/procesamiento inicial | 🔵 | Decisión de arquitectura tomada (server-first, ver [ARCHITECTURE.md](./ARCHITECTURE.md)); sin código todavía |
-| Filtrado por categoría | 🔵 | Mecanismo decidido: URL Search Params |
-| Búsqueda por texto | 🔵 | Mecanismo decidido: URL Search Params |
-| Ordenamiento por criterio de negocio | 🟡 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)). Implementado en `lib/products/apply-query.ts`; sin UI |
+| Server Components para carga/procesamiento inicial | 🟡 | Implementado en `app/products/page.tsx`; éxito con datos reales pendiente de Fake Store API |
+| Filtrado por categoría | 🟡 | Implementado en `ProductFilters`; la selección con datos reales está bloqueada por Fake Store API (`getCategories`) |
+| Búsqueda por texto | 🟡 | Implementado en `ProductFilters` (`q`) y verificado por URL; resultados con datos reales pendientes |
+| Ordenamiento por criterio de negocio | 🟡 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)). Implementado en `lib/products/apply-query.ts` y en la UI (`ProductFilters`) |
 | Integración `GET /products` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente (la API respondió 522 durante la verificación) |
 | Integración `GET /products/categories` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente |
 | Normalización de errores de API en estados controlados (error, empty) | 🟡 | Implementada en `lib/products/fake-store/client.ts`; probada con servidor local y fetch simulado |
-| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🔵 | Aprobado conceptualmente ([DEC-010](./DECISIONS.md)); sin código |
+| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🟡 | Implementado ([DEC-010](./DECISIONS.md)): `app/products/page.tsx`, parser y `buildProductsHref`; éxito con datos reales pendiente |
 | Parser de query params (`parseProductsQuery()`) | 🟡 | Implementado en `lib/products/parse-query.ts`; probado con casos de borde |
 | Capa de acceso a datos (`getProducts`, `getCategories`) | 🟡 | Implementada en `lib/products/catalog.ts`; validación contra la API real pendiente |
 | Modelo de dominio `Product` independiente del DTO de Fake Store API | 🟡 | Implementado en `lib/products/types.ts` y `lib/products/fake-store/mapper.ts` |
-| Estados del PLP (loading, success, empty, error) | 🔵 | Comportamiento documentado; implementación técnica pendiente |
+| Estados del PLP (loading, success, empty, error) | 🟡 | success y empty implementados, pendientes de validar con datos reales; error validado en runtime; `loading.js` no implementado |
+| Tarjetas de producto `ProductCard` con `next/image` | 🟡 | Implementado en `components/products/ProductCard.tsx`; render con datos reales pendiente |
 | Retry manual desde la UI en estado error | 🔵 | Diseño documentado; sin retries automáticos; sin código |
 
 ### PDP (Product Detail Page)
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Ruta dinámica `/products/[id]` | 🔵 | — |
-| Metadata dinámica — título | 🔵 | — |
-| Metadata dinámica — descripción | 🔵 | — |
-| Open Graph | 🔵 | Ver punto ambiguo #3 al final de este documento (alcance de la imagen OG) |
-| Botón "Agregar al carrito" | 🔵 | — |
-| Integración `GET /products/{id}` | 🔵 | — |
+| Ruta dinámica `/products/[id]` | 🟡 | Implementada (`app/products/[id]/page.tsx`); estado success con datos reales pendiente |
+| Página 404 para producto inexistente | 🟡 | Implementada (`not-found.tsx`); validada en runtime: HTTP 404 y título propio |
+| Estado de error diferenciado de la PDP | 🟡 | Implementado; validado en runtime con la API caída. Nunca se convierte en 404 ni en producto vacío |
+| Metadata dinámica — título | 🟡 | Implementada en `generateMetadata()`; metadata de producto real pendiente de validar |
+| Metadata dinámica — descripción | 🟡 | Implementada en `generateMetadata()`; pendiente de validar con producto real |
+| Open Graph | 🟡 | Implementado (`title`, `description`, `image` = `imageUrl`, `type: website`); pendiente de validar con producto real. Ver punto ambiguo #3 |
+| Botón "Agregar al carrito" | 🟡 | Reutiliza `AddToCartButton` sobre el store existente; store validado; clic real en la PDP pendiente de datos reales |
+| Integración `GET /products/{id}` | 🟡 | Implementada en `lib/products/product.ts`; validación con la API real pendiente, incluido el caso `200 + null` |
 
 > Nota: la metadata dinámica y Open Graph de la PDP cumplen a la vez el criterio de SEO del reto; no se duplica como sección aparte para evitar redundancia.
 
@@ -61,9 +64,33 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Estado global del carrito | 🟢 | Implementado con Zustand (`lib/cart/store.ts`) y validado manualmente — ver [DEC-007](./DECISIONS.md) |
 | Contador de ítems reflejado en el Header | 🟢 | Implementado (`CartCounter`) y validado manualmente, incluyendo recuperación tras refresh |
 
-> Nota: validado hasta ahora mediante la superficie de demostración temporal en `app/page.tsx` (sin PDP real todavía). El botón "Agregar al carrito" de la PDP (sección 1 → PDP) sigue en 🔵 hasta que exista la ruta `/products/[id]` real.
+> Nota: validado hasta ahora mediante la superficie de demostración temporal en `app/page.tsx` La PDP `/products/[id]` ya existe; el clic real en su botón "Agregar al carrito" queda pendiente de validar con datos reales de la API.
 
 ---
+
+## Estado del checkpoint PLP + PDP
+
+Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las validaciones que requieren datos reales quedan pendientes; no se han sustituido por fixtures, mocks ni fallbacks.
+
+| Validación | Estado |
+|---|---|
+| `pnpm lint` | PASS |
+| `pnpm exec tsc --noEmit` | PASS |
+| `pnpm build` | PASS |
+| `git diff --check` | PASS |
+| `getProduct` (12 casos, `fetch` simulado) | PASS |
+| PLP visual desktop y mobile (estado de error, API caída) | PASS |
+| PDP: 404 para ids no válidos y HTTP 404 en `not-found.tsx` | PASS |
+| PDP: metadata del not-found no usa el título genérico del layout | PASS |
+| PDP: estado de error sin convertirlo en 404 ni en producto vacío | PASS (API caída) |
+| Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (validado con el store compilado) |
+| Validación visual de la PDP en estado success | PENDIENTE (requiere datos reales) |
+| Validación de la PLP con productos reales (success, empty, categorías) | PENDIENTE (requiere datos reales) |
+| Comportamiento real de Fake Store ante `200 + null` | PENDIENTE (requiere la API) |
+| Clic real en "Agregar al carrito" de la PDP y contador del header | PENDIENTE (requiere datos reales) |
+| Verificación en runtime de la Data Cache ante fallo de revalidación | PENDIENTE (requiere la API) |
+
+> Fake Store API se encuentra temporalmente no disponible durante este checkpoint, por lo que las validaciones que requieren datos reales de éxito quedan pendientes hasta que el servicio vuelva a responder.
 
 ## 2. Requisitos técnicos / arquitectura
 

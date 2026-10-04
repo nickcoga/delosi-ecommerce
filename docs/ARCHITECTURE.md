@@ -52,18 +52,18 @@ Este documento describe la **arquitectura objetivo** del reto: la organización 
 
 ## Estrategia prevista para PLP
 
-Arquitectura objetivo (no implementada):
+Implementada en el checkpoint PLP + PDP. La validación de los estados success y empty con datos reales queda pendiente de Fake Store API:
 
 - Ruta `/products`, implementada como Server Component que lee `searchParams` y compone la UI en servidor.
 - Filtros por categoría, búsqueda por texto y ordenamiento reflejados en la URL, para que la página sea enlazable, compartible y navegable con el botón "atrás".
-- Filtros y búsqueda Server-first: enlaces (`<a>`) y formularios GET. Un Client Component solo se justifica ante una necesidad concreta de interacción inmediata (por ejemplo, búsqueda con debounce).
-- Loading state básico (`loading.js` estándar de Next.js), distinto de la iniciativa de proactividad "Streaming + Suspense + Skeletons" (ver más abajo).
+- Filtros y búsqueda implementados como Client Component (`ProductFilters`) que navega con `router.push` usando `buildProductsHref()`. Los controles reciben sus valores desde la URL en el servidor, así que el HTML inicial ya refleja los parámetros. Se eligió frente a enlaces y formularios GET sin JS; la decisión queda registrada en "Decisiones de implementación".
+- Loading state (`loading.js`) y Suspense: no implementados. Quedan para una fase posterior, distinta de la iniciativa de proactividad "Streaming + Suspense + Skeletons".
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
-- **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido):** caché de datos de Next.js mediante `fetch`, con revalidación de 3600 segundos para productos y categorías. La implementación está pendiente.
+- **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido e implementado):** caché de datos de Next.js mediante `fetch` con `next.revalidate: 3600`, aplicada en `fetchFakeStoreJson` y compartida por productos, categorías y detalle. La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
 
 ## Contrato conceptual del PLP
 
-Diseño aprobado conceptualmente ([DEC-010](./DECISIONS.md)); su implementación está pendiente.
+Diseño aprobado ([DEC-010](./DECISIONS.md)) e implementado en el checkpoint PLP + PDP. La validación de éxito con datos reales está pendiente de Fake Store API.
 
 **Ruta canónica:** `/products`. La URL es la fuente de verdad del estado del catálogo. Zustand no almacena filtros, búsqueda, orden ni productos: permanece reservado al carrito ([DEC-007](./DECISIONS.md)).
 
@@ -274,13 +274,14 @@ Restricciones:
 - Reutiliza el mismo modelo `Product`; no se añade `source` al modelo de dominio.
 - Queda como iniciativa futura y no debe implementarse en esta fase.
 
-## Estrategia prevista para PDP
+## Estrategia de la PDP
 
-Arquitectura objetivo (no implementada):
+Implementada en el checkpoint PLP + PDP. La validación del estado success con datos reales queda pendiente de Fake Store API:
 
-- Ruta dinámica `/products/[id]` como Server Component.
-- Generación de metadata dinámica (título, descripción) y Open Graph a partir de los datos del producto obtenido.
-- Botón "Agregar al carrito" como punto de interactividad en Client Component, que se conecta al estado global del carrito.
+- Ruta dinámica `/products/[id]` como Server Component (`app/products/[id]/page.tsx`).
+- `getProduct(id)` consulta `/products/{id}` directamente, separado de `getProducts()`. Comparte el cliente de Fake Store, el timeout de 10 s, `revalidate: 3600`, el guard de DTO y el mapper.
+- Metadata dinámica con `generateMetadata()` (título, descripción, Open Graph con `imageUrl`, `type: website`). Si el producto no existe o la API falla, la metadata es genérica: nunca metadata de producto falsa.
+- Botón "Agregar al carrito" reutiliza `components/AddToCartButton.tsx` sobre el store Zustand existente. `ProductDetails` no es Client Component.
 
 ## Estrategia del carrito
 
@@ -348,16 +349,28 @@ flowchart LR
     CartState --> HeaderCounter["Contador de ítems\n(Header)"]
 ```
 
+## Decisiones de implementación (checkpoint PLP + PDP)
+
+Tomadas durante la implementación, sin abrir una DEC nueva:
+
+- **`ProductsError` incluye `not_found`:** distingue producto inexistente (HTTP 404 o id no válido) de cualquier fallo de API. Un id no válido (`abc`, `0`, `01`, `1.5`, `-3`) responde `not_found` sin llamar a la API.
+- **`getProduct` envuelto con `cache()` de React:** `generateMetadata()` y la página comparten el resultado dentro de la misma petición. Se añadió para evitar dos llamadas al origen cuando el signal de timeout desactiva la memoización de Next.
+- **Reutilización de `AddToCartButton`:** el componente existente ya usa el store actual. Se mapea `product.id → productId` y `product.imageUrl → image` porque el store usa esos nombres; el store no cambió.
+- **Filtros como Client Component:** `ProductFilters` navega con `router.push` y `buildProductsHref()`. Los valores de los controles salen de la URL en el servidor.
+- **Metadata de 404:** `not-found.tsx` exporta su propio `metadata`, para no heredar el título genérico del layout raíz.
+- **Respuesta `200 + null` de Fake Store:** hoy se clasifica como `invalid_payload`, es decir, estado de error. No se ha verificado si la API la devuelve. Pendiente.
+
 ## Resumen de decisiones pendientes
 
 Explícitamente no resueltas por este documento, a definir y registrar en [DECISIONS.md](./DECISIONS.md):
 
-- Implementación de la caché y revalidación de 3600 segundos ([DEC-009](./DECISIONS.md), decidida; código pendiente), incluida la verificación del comportamiento ante fallo de revalidación.
-- Implementación del parser, `getProducts`, `getCategories`, mapper y tipos (trabajo posterior a [DEC-010](./DECISIONS.md)).
+- Validación de los estados success y empty con datos reales, y clic real en "Agregar al carrito" (bloqueado por Fake Store API).
+- Comportamiento real de Fake Store API ante ids inexistentes: `404` frente a `200 + null` (pendiente de verificar).
+- Verificación en runtime del comportamiento de la Data Cache ante fallos de revalidación ([DEC-009](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
+- `loading.js`, Suspense y `error.tsx`: no implementados.
 - Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).
-- Forma de validar la respuesta externa (guards manuales o librería).
 - Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright).
 - Estructura final de carpetas por dominio.
 
-Resueltas desde la última versión de este documento: tecnología y persistencia del estado del carrito ([DEC-007](./DECISIONS.md)).
+Resueltas desde la última versión de este documento: tecnología y persistencia del estado del carrito ([DEC-007](./DECISIONS.md)); forma de validar la respuesta externa (guards manuales, sin librería, en `lib/products/fake-store/dto.ts`).

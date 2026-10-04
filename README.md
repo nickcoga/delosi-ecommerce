@@ -54,9 +54,9 @@ La aplicación en desarrollo queda disponible en [http://localhost:3000](http://
 
 ```
 delosi-ecommerce/
-├── app/                # App Router (layout, page, estilos globales)
-├── components/         # Componentes React (Header, CartCounter, AddToCartButton)
-├── lib/                # Lógica compartida (carrito: lib/cart/store.ts)
+├── app/                # App Router (layout, page, products/ PLP y products/[id] PDP)
+├── components/         # Componentes React (Header, CartCounter, AddToCartButton, products/)
+├── lib/                # Lógica compartida (cart/ con Zustand, products/ con la capa de datos)
 ├── public/              # Assets estáticos
 ├── docs/                 # Documentación técnica del reto
 │   ├── CHECKLIST.md
@@ -71,7 +71,7 @@ delosi-ecommerce/
 └── pnpm-workspace.yaml
 ```
 
-> Estructura actual: bootstrap y carrito (DEC-007). La organización por dominios para PLP y PDP aún no existe en código; su diseño conceptual está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> Estructura actual: bootstrap, carrito (DEC-007), PLP y PDP. Su diseño conceptual está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## API pública utilizada
 
@@ -83,14 +83,15 @@ delosi-ecommerce/
 
 ## Estado del proyecto
 
-**Fase actual: diseño del PLP.**
+**Fase actual: checkpoint PLP + PDP cerrado.** La validación de los estados con datos reales de éxito está pendiente, porque Fake Store API no estaba disponible durante este checkpoint.
 
 - Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente mediante una demo temporal en `app/page.tsx`.
-- Implementado en `lib/products/` (sin UI): contrato de URL del PLP (`category`, `q`, `sort`), parser, modelo `Product`, capa de acceso a datos con caché de 3600 s y normalización de errores ([DEC-010](docs/DECISIONS.md)). Pendiente de validación contra la API real.
-- Diseño aprobado, sin implementar: UI del PLP, estados visibles (loading, empty, error) y retry manual.
+- Implementado en `lib/products/` y en la UI: contrato de URL del PLP (`category`, `q`, `sort`), parser, modelo `Product`, capa de acceso a datos con caché de 3600 s y normalización de errores ([DEC-010](docs/DECISIONS.md)). Pendiente de validación contra la API real.
+- Implementado: UI del PLP (búsqueda, categoría y orden desde la URL) y estados success, empty y error. Pendiente: validación de success y empty con datos reales, `loading.js` y retry manual.
+- Implementado: PDP `/products/[id]` con metadata dinámica, página not-found y `AddToCartButton` sobre el store existente. Pendiente: validación del estado success con datos reales.
 - Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
-- Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementación pendiente; no existe caché en código todavía.
-- Sin implementar: PLP, PDP, testing y iniciativas de proactividad.
+- Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementado en `lib/products/fake-store/client.ts`. Verificación en runtime pendiente.
+- Sin implementar: testing, `loading.js`, Suspense, skeletons, `error.tsx`, retry manual y fallback de demostración.
 
 Los documentos en `docs/` definen el alcance, registran las decisiones tomadas y las pendientes, y sirven de checklist de avance.
 
@@ -117,7 +118,7 @@ Pendiente de definición. El reto sugiere Jest, React Testing Library, Cypress o
 
 ## Performance
 
-Pendiente de implementación. Se documentarán aquí las estrategias aplicadas (optimización de imágenes, lazy loading, prevención de layout shift, caché/revalidación) una vez implementadas y validadas.
+Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift) y caché de datos con `revalidate: 3600`. Pendiente de validación con datos reales.
 
 ## Iniciativas de proactividad
 

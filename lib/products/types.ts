@@ -23,7 +23,8 @@ export type ProductsError =
   | { kind: "http"; status: number }
   | { kind: "network" }
   | { kind: "timeout" }
-  | { kind: "invalid_payload" };
+  | { kind: "invalid_payload" }
+  | { kind: "not_found" };
 
 export type ProductsResult<T> =
   | { ok: true; data: T }

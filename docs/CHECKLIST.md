@@ -38,7 +38,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Parser de query params (`parseProductsQuery()`) | 🟡 | Implementado en `lib/products/parse-query.ts`; probado con casos de borde |
 | Capa de acceso a datos (`getProducts`, `getCategories`) | 🟡 | Implementada en `lib/products/catalog.ts`; validación contra la API real pendiente |
 | Modelo de dominio `Product` independiente del DTO de Fake Store API | 🟡 | Implementado en `lib/products/types.ts` y `lib/products/fake-store/mapper.ts` |
-| Estados del PLP (loading, success, empty, error) | 🟡 | success y empty implementados, pendientes de validar con datos reales; error validado en runtime; `loading.tsx` implementado en PLP y PDP (validación visual pendiente) |
+| Estados del PLP (loading, success, empty, error) | 🟡 | success y empty implementados, validados con fixtures y pendientes con datos reales; error validado en runtime; `loading.tsx` implementado solo en el PLP (validación visual del skeleton pendiente). La PDP no tiene skeleton propio, por el 404 real |
 | Tarjetas de producto `ProductCard` con `next/image` | 🟡 | Implementado en `components/products/ProductCard.tsx`; render con datos reales pendiente |
 | Retry manual desde la UI en estado error | 🔵 | Diseño documentado; sin retries automáticos; sin código |
 
@@ -66,10 +66,10 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Persistencia en `localStorage["delosi-cart"]` | 🟢 | Validada manualmente y en producción (carga directa, refresh, navegación PLP → PDP → PLP); cubierta por tests |
 | Mismo producto: incrementa cantidad sin duplicar la línea | 🟢 | Cubierto por `tests/cart.test.ts` |
 | Hidratación del `CartCounter` | 🟢 | Sin hydration mismatch reproducido en desarrollo ni producción. Observación menor no bloqueante: en desarrollo el contador aparece ~200 ms después de la carga |
-| Integración PDP → `AddToCartButton` → Zustand → `CartCounter` | 🟡 | Mapeo verificado y store probado; el clic visual en la PDP con datos reales o fixtures no está confirmado |
+| Integración PDP → `AddToCartButton` → Zustand → `CartCounter` | 🟢 | Validada con fixtures en desktop y móvil: clic en "Agregar al carrito", contador del Header actualizado. Con datos reales de Fake Store API: pendiente |
 | Tests del carrito | 🟢 | 15/15 en `tests/cart.test.ts`: estado inicial, duplicados, cantidades, `setQuantity`, `removeItem`, contador y persistencia |
 
-> Nota: el carrito se validó inicialmente con la demo temporal de `app/page.tsx`, retirada en el bloque Home + A' (`/` redirige a `/products`). La PDP `/products/[id]` ya existe; el clic real en su botón "Agregar al carrito" queda pendiente de validar con datos reales de la API.
+> Nota: el carrito se validó inicialmente con la demo temporal de `app/page.tsx`, retirada en el bloque Home + A' (`/` redirige a `/products`). El clic en "Agregar al carrito" de la PDP está validado con fixtures; con datos reales de la API queda pendiente.
 
 ---
 
@@ -89,11 +89,11 @@ Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las 
 | PDP: metadata del not-found no usa el título genérico del layout | PASS |
 | PDP: estado de error sin convertirlo en 404 ni en producto vacío | PASS (API caída) |
 | Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (tests permanentes 15/15) |
-| Validación visual de la PDP en estado success | PENDIENTE (requiere datos reales) |
+| Validación visual de la PDP en estado success | PASS (fixtures, desktop y móvil). Con datos reales: PENDIENTE |
 | Validación visual de la PLP con fixtures (success, empty, filtros, orden, responsive) | PASS (fixtures) |
 | Validación de la PLP contra Fake Store API real (success, empty, categorías) | PENDIENTE (API caída) |
 | Comportamiento real de Fake Store ante `200 + null` | PENDIENTE (requiere la API) |
-| Clic real en "Agregar al carrito" de la PDP y contador del header | PENDIENTE (requiere datos reales) |
+| Clic real en "Agregar al carrito" de la PDP y contador del header | PASS (fixtures, desktop y móvil). Con datos reales: PENDIENTE |
 | Verificación en runtime de la Data Cache ante fallo de revalidación | PENDIENTE (requiere la API) |
 
 > Fake Store API se encuentra temporalmente no disponible durante este checkpoint, por lo que las validaciones que requieren datos reales de éxito quedan pendientes hasta que el servicio vuelva a responder.
@@ -112,11 +112,11 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | 8 productos fixture e imágenes locales (`public/fixtures/products/`) | 🟢 | Imágenes locales; no sustituyen las de Fake Store |
 | PLP visual con fixtures: success, cards, imágenes, responsive desktop y mobile | 🟢 | Validado visualmente |
 | Filtros, búsqueda y orden con fixtures | 🟢 | Validación reportada |
-| Add to Cart con el mismo `Product` (superficie PDP) | 🟡 | El store y el mapeo están probados; el clic visual en la PDP con fixtures no está confirmado |
+| Add to Cart con el mismo `Product` (superficie PDP) | 🟢 | Clic validado en la PDP con fixtures (desktop y móvil); el contador del Header se actualiza |
 | Optimización LCP: `priority` en las 4 primeras tarjetas ([DEC-012](./DECISIONS.md)) | 🟢 | Aviso de LCP resuelto |
 | Tests del catálogo: 19/19 (suite completa 34/34 con carrito) | 🟢 | Runner `node:test`, sin dependencias nuevas |
-| PDP visual con fixtures | 🟡 | Pendiente de confirmación |
-| Navegación Back/Forward y refresh con fixtures | 🟡 | No reportado como validado |
+| PDP visual con fixtures | 🟢 | Validada en desktop y móvil con fixtures ([evidencia](evidence/fake-store-2026-10-04/04-fixtures-pdp-desktop.png)) |
+| Navegación Back/Forward y refresh con fixtures | 🟡 | Back del navegador desde la PDP validado: conserva `q` y `category` + `sort`. Forward y refresh no validados todavía |
 
 **Validación contra Fake Store API real (pendiente)**
 
@@ -139,14 +139,14 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | Tailwind CSS | 🟢 | Verificado en `app/globals.css` / `postcss.config.mjs` |
 | ESLint | 🟢 | Verificado en `eslint.config.mjs` |
 | Git repository + commit inicial | 🟢 | — |
-| Remoto GitHub + push inicial | 🟢 | Push inicial (`fb9d8a4`) realizado. En la última verificación (2026-10-04) `main` coincidía con `origin/main`; confirmar con `git status -sb` antes de asumirlo |
+| Remoto GitHub + push inicial | 🟢 | Push inicial (`fb9d8a4`) realizado. El 2026-10-04 la rama local `main` iba por delante de `origin/main` con commits sin subir; confirmar con `git status -sb` antes de asumirlo |
 
 ### Arquitectura y organización del código
 
 | Ítem | Estado | Nota |
 |---|---|---|
 | Arquitectura modular / orientada a dominio (principio) | 🟡 | Aplicada en `lib/products/` y `lib/cart/`; la estructura final de carpetas sigue abierta |
-| Separación Server Components / Client Components (reglas generales) | 🟢 | Islas cliente implementadas: `ProductFilters`, `ProductCard` (sin estado), `AddToCartButton`, `CartCounter`. El resto son Server Components |
+| Separación Server Components / Client Components (reglas generales) | 🟢 | Islas cliente implementadas: `ProductFilters`, `AddToCartButton`, `CartCounter`. `ProductCard` y `ProductDetails` son Server Components |
 | Escalabilidad y colaboración entre desarrolladores | 🔵 | Objetivo de diseño adoptado; se valida con la implementación y el code review |
 | SOLID / Clean Code | 🔵 | Principio adoptado como guía de implementación; ver punto ambiguo #2 |
 | Estructura final de carpetas por dominio | ⚪ | Decisión abierta — ver [ARCHITECTURE.md](./ARCHITECTURE.md) |
@@ -168,9 +168,9 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Optimización de imágenes externas | 🔵 | Vía `next/image`, ya disponible en el stack decidido; sin implementar |
-| Lazy loading | 🔵 | Vía `next/image` / carga diferida de componentes; sin implementar |
-| Prevención de layout shift | 🔵 | Vía dimensionado explícito de imágenes (`next/image`); sin implementar |
+| Optimización de imágenes externas | 🟡 | `next/image` en `ProductCard` y `ProductDetails`, con `remotePatterns` para `fakestoreapi.com`. Validado solo con imágenes locales de fixtures; imágenes reales de Fake Store pendientes |
+| Lazy loading | 🟡 | Lazy por defecto de `next/image`; `priority` en las 4 primeras tarjetas y en la PDP (DEC-012). Verificado con fixtures; no medido con Lighthouse |
+| Prevención de layout shift | 🟡 | Dimensionado con `fill` en contenedor de aspect ratio fijo. CLS real no medido todavía |
 | Política de caché y revalidación del catálogo (3600 s) | 🟡 | Decidido en [DEC-009](./DECISIONS.md); implementado en `lib/products/fake-store/client.ts` mediante `next.revalidate` |
 | Implementación de caché en `getProducts` y `getCategories` | 🟡 | Aplicada en `fetchFakeStoreJson`, que usan ambas funciones; comportamiento de Data Cache en runtime pendiente de verificación |
 | Verificación del comportamiento de caché ante fallo de revalidación y de errores no cacheados | ⚪ | Pendiente; se verifica durante la implementación |
@@ -207,9 +207,9 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Repositorio público | ⚪ | Visibilidad real del repo remoto no verificada desde este bootstrap — ver punto ambiguo #1 |
+| Repositorio público | 🟢 | Verificado el 2026-10-04 con la API de GitHub: `nickcoga/delosi-ecommerce` responde `"private": false`, `"visibility": "public"` |
 | Sustentación / Code Review (arquitectura, performance y diseño) | ⚪ | Ocurre al cierre del reto |
-| Despliegue y validación final en Vercel | ⚪ | No aparece como requisito en el resumen documentado del reto; confirmar si aplica |
+| Despliegue y validación final en Vercel | ⚪ | No realizado. El reto lo pide como preferencia ("de preferencia publicado en algún servidor"), no como requisito obligatorio. Decisión pendiente antes de la sustentación |
 
 ---
 
@@ -233,7 +233,7 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Página `/cart` con líneas, cantidades y total | 💡 | No aparece en el resumen de requisitos documentado. Confirmar contra el PDF original |
+| Página `/cart` con líneas, cantidades y total | 💡 | No aparece en el PDF del reto (Reto Técnico 2026 DELOSI). Fuera del alcance mínimo |
 | Quitar productos y vaciar el carrito desde la UI | 💡 | `removeItem` y `setQuantity` existen en el store sin UI; `clearCart` no existe (fuera de alcance, [DEC-007](./DECISIONS.md)) |
 | Checkout y pagos | 💡 | Fuera de alcance |
 | Sincronización del carrito entre pestañas | 💡 | Fuera de alcance ([DEC-007](./DECISIONS.md)) |
@@ -243,7 +243,7 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 No se interpretan unilateralmente — quedan explícitos para decidir en equipo:
 
-1. **Visibilidad del repositorio.** No se verificó si el repositorio remoto en GitHub es público o privado; el reto exige que sea público como entregable.
+1. **Visibilidad del repositorio.** Resuelto el 2026-10-04: el repositorio es público (verificado con la API de GitHub).
 2. **Verificación de SOLID/Clean Code y escalabilidad/colaboración.** El PDF los menciona como criterios de evaluación, pero no da un mecanismo de verificación individual — ¿se evalúan ítem por ítem o transversalmente en el code review final?
 3. **Alcance de Open Graph en la PDP.** No está claro si basta con título/descripción/URL dinámicos, o si se espera también una imagen OG específica por producto.
-4. **Alcance de "testing unitario o integración".** El PDF usa un conector disyuntivo ("o"); no aclara si basta con un solo tipo de testing o si se espera cobertura mínima de ambos.
+4. **Alcance de "testing unitario o integración".** Resuelto por el PDF: usa el conector "o", así que basta con pruebas unitarias o de integración. Se cubren con `node:test` la lógica de catálogo y el store del carrito.

@@ -158,6 +158,7 @@ Justificación precisa (sin sobreafirmar lo que la librería resuelve):
 - Zustand queda incorporado como dependencia del proyecto (`zustand` en `package.json`).
 - El componente del contador en el Header maneja explícitamente el estado de hidratación (antes/después de leer `localStorage`).
 - `localStorage` permite conservar el carrito entre refresh y cierre/reapertura del navegador (mismo origen).
+- Impacto en memoria acotado: el store contiene solo `items` (productId, title, price, image y quantity) de los productos añadidos; `persist` escribe únicamente esa parte bajo la clave `delosi-cart`, y `hasHydrated` no se persiste (cubierto por `tests/cart.test.ts`). No se guarda el catálogo, ni respuestas de la API, ni estado de servidor o caché adicional en el store. El tamaño crece solo con el número de productos distintos del carrito, y el catálogo sigue gestionado por la caché de datos de Next.js (DEC-009).
 
 **Límites de esta decisión (lo que sigue sin decidirse):**
 - Sincronización entre pestañas — no implementada, sigue fuera de alcance.
@@ -180,7 +181,7 @@ Hechos conocidos:
 - Dentro de un mismo render, `fetch` con la misma URL y opciones se memoiza.
 - En desarrollo, la caché HMR puede mostrar datos antiguos entre refrescos.
 - Fake Store API no ofrece búsqueda ni ordenamiento en sus endpoints: el filtrado y el orden ocurren fuera de la API.
-- Observación del 2026-10-04: durante la auditoría, Fake Store API respondió HTTP 522 en `/products` y `/products/categories`, en varios intentos. No hay medición de disponibilidad histórica.
+- Observación del 2026-10-04: durante la validación, Fake Store API respondió HTTP 522 en `/products` y HTTP 521 en `/products/categories` (capturas en [DEC-011](#dec-011--fixtures-explícitos-de-desarrollo-y-test)). No hay medición de disponibilidad histórica.
 - El estado del carrito ya vive en cliente con Zustand (DEC-007). No es caché de datos de catálogo.
 
 **Alternativas evaluadas:**
@@ -203,7 +204,7 @@ La elección se basa en los requisitos del reto, no en preferencia personal ni e
 - El SEO depende de que el contenido esté en el HTML inicial, lo que favorece `fetch` en servidor frente a lecturas en cliente.
 - Los requisitos actuales no demandan las capacidades que justifican React Query: gestión de server state en cliente, polling, refetch automático complejo, mutations remotas (Fake Store API solo expone `GET`, según DEC-004), infinite queries, invalidación compleja de caché en cliente, o sincronización de server state entre varios Client Components.
 - Incorporar React Query ahora añadiría un provider, una frontera de Client Components para el catálogo, una segunda capa de caché que duplica la del servidor y complejidad de hidratación, sin resolver un problema que hoy exista.
-- La resiliencia es requisito real: la API respondió HTTP 522 durante la evaluación del 2026-10-04. Por eso el manejo de errores se normaliza en la capa de acceso a datos, y no depende de la librería elegida.
+- La resiliencia es requisito real: la API respondió HTTP 522 y 521 durante la validación del 2026-10-04. Por eso el manejo de errores se normaliza en la capa de acceso a datos, y no depende de la librería elegida.
 
 **Reconsideración de React Query:** se volverá a evaluar solo si aparecen requisitos concretos, por ejemplo búsqueda reactiva sin navegación que deba consultar la API, polling o refetch periódico, escrituras remotas (checkout o similares), scroll infinito, o varios Client Components que necesiten compartir el mismo server state. En ese caso se abrirá una decisión nueva que supersedería esta parte.
 
@@ -225,7 +226,7 @@ La elección se basa en los requisitos del reto, no en preferencia personal ni e
 - `fetch` sin opciones de caché no cachea en servidor en Next.js 16.3.8; `cache: 'force-cache'` y `next.revalidate` son opt-in.
 - Con `searchParams` la página es dinámica en tiempo de request; la caché de datos y la de la ruta son mecanismos distintos.
 - En desarrollo, la caché HMR puede mostrar datos antiguos entre refrescos.
-- Fake Store API respondió HTTP 522 durante la evaluación del 2026-10-04. Cualquier caché debe considerar qué ocurre cuando la revalidación falla.
+- Fake Store API respondió HTTP 522 en `/products` y HTTP 521 en `/products/categories` durante la validación del 2026-10-04. Cualquier caché debe considerar qué ocurre cuando la revalidación falla.
 
 **Decision:**
 Server-side caching con Next.js Data Cache mediante `fetch`, y revalidación basada en tiempo de **3600 segundos (1 hora)** para productos y categorías.
@@ -261,7 +262,7 @@ Server-side caching con Next.js Data Cache mediante `fetch`, y revalidación bas
 - Timeout o fallo de red → `error`.
 - Payload inválido → `error`.
 - Nunca se convierte un error del API en `[]`.
-- Según la documentación de `fetch` de Next.js incluida en el proyecto, solo se almacenan respuestas `200`. Un error no debe quedar guardado en caché; esto se confirma en la implementación.
+- Según la documentación de `fetch` de Next.js incluida en el proyecto, solo se almacenan respuestas `200`. Un error no debe quedar guardado en caché; esto está pendiente de verificación en runtime.
 - La caché es una estrategia de **reducción de dependencia del origen**, no una garantía de disponibilidad.
 - Fallback de demostración: iniciativa futura, no implementada. No debe ser silencioso, no debe persistirse, no debe contaminar Zustand ni el carrito, debe reutilizar el mismo modelo `Product` y no añade un campo `source` al dominio.
 
@@ -274,7 +275,7 @@ Server-side caching con Next.js Data Cache mediante `fetch`, y revalidación bas
 - Negativas: la frescura del catálogo tiene un retraso de hasta una ventana de revalidación.
 - La caché está implementada en `fetchFakeStoreJson`. Pendiente: verificar en runtime que los errores no quedan almacenados y el comportamiento ante fallo de revalidación.
 - En la implementación debe verificarse en la versión instalada de Next.js: (a) qué se sirve cuando falla la revalidación en segundo plano, (b) que los errores no quedan almacenados en caché.
-- El retry manual ([ARCHITECTURE.md](./ARCHITECTURE.md), "Retry") no fuerza un bypass de caché en esta fase. Como los errores no se almacenan, un retry tras un error vuelve a consultar al origen.
+- El retry manual ([ARCHITECTURE.md](./ARCHITECTURE.md), "Retry") no está implementado todavía y no fuerza un bypass de caché en esta fase. Se espera que, al no almacenarse los errores, un retry vuelva a consultar al origen; pendiente de verificación en runtime.
 - DEC-008 y DEC-010 no se modifican por esta decisión.
 
 ---
@@ -318,7 +319,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 
 ## DEC-011 — Fixtures explícitos de desarrollo y test
 
-**Status:** Accepted — implementado. El PLP está validado visualmente en desarrollo con fixtures; la PDP con fixtures queda pendiente de confirmación. La validación contra Fake Store API real sigue pendiente.
+**Status:** Accepted — implementado. El PLP y la PDP están validados visualmente en desarrollo con fixtures (desktop y móvil), incluido el clic en "Agregar al carrito" y el Back del navegador desde la PDP. La validación contra Fake Store API real sigue pendiente porque el servicio no respondía el 2026-10-04.
 
 **Context:**
 Fake Store API ha estado no disponible (HTTP 521/522) durante la implementación del PLP y la PDP. Sin datos de éxito no se pueden validar visualmente el listado, los filtros, la PDP ni el flujo del carrito con datos reales.
@@ -343,6 +344,50 @@ Permite validar la interfaz y los flujos de forma determinista, sin depender de 
 - Las imágenes de fixtures son locales (`public/fixtures/products/`) y no sustituyen las imágenes reales de Fake Store API.
 - Los tests del catálogo y del store del carrito usan el runner nativo de Node (`node:test`) con un loader de alias, sin dependencias nuevas. La elección de herramienta de testing sigue abierta.
 
+**Incidente de disponibilidad de Fake Store API (2026-10-04)**
+
+Observaciones de la validación final, registradas tal cual aparecen en las capturas. No se atribuye causa, porque las capturas no la demuestran.
+
+| Endpoint probado | Fecha/hora UTC (de la captura) | Comportamiento observado | Evidencia |
+|---|---|---|---|
+| `https://fakestoreapi.com/products/categories` | 2026-10-04 22:56:23 | Página de Cloudflare "Web server is down", **código de error 521**. Cloudflare indica que el host `fakestoreapi.com` no responde | [01](./evidence/fake-store-2026-10-04/01-fakestore-products-categories-521.png) |
+| `https://fakestoreapi.com/products` | 2026-10-04 17:19:40 | Página de Cloudflare "Connection timed out", **código de error 522**. Cloudflare indica que la conexión con el origen expiró | [02](./evidence/fake-store-2026-10-04/02-fakestore-products-522.png) |
+
+Además, durante esa misma sesión, sondeos directos con `curl` desde el entorno de desarrollo devolvieron **HTTP 521** en `/products`, `/products/1` y `/products/categories`. Esos sondeos no están capturados como archivo; las capturas 01 y 02 son la evidencia principal.
+
+![Captura 01: fakestoreapi.com/products/categories con Cloudflare error 521](./evidence/fake-store-2026-10-04/01-fakestore-products-categories-521.png)
+
+![Captura 02: fakestoreapi.com/products con Cloudflare error 522](./evidence/fake-store-2026-10-04/02-fakestore-products-522.png)
+
+Los dos códigos aparecen en momentos distintos del mismo día. No se ha determinado si el servicio alterna entre ambos errores o si son dos incidencias.
+
+**Impacto en la validación:**
+- No se pudo completar la validación E2E con datos reales: listado de productos, categorías, detalle de producto y flujo completo del catálogo contra la API.
+- La integración con Fake Store API está implementada según el contrato del reto (`lib/products/fake-store/client.ts`). Su comportamiento ante respuestas reales queda sin verificar en runtime, incluido el caso `200 + null`.
+
+**Fixtures como solución para desarrollo y validación:**
+Los fixtures permitieron seguir validando la UI y el flujo sin depender del servicio externo: filtros, búsqueda, ordenamiento, navegación PLP → PDP, estados vacío y error, carrito, responsive e imágenes. ![Captura 03: PLP con fixtures en desktop](./evidence/fake-store-2026-10-04/03-fixtures-plp-desktop.png)
+
+![Captura 04: PDP con fixtures en desktop, con "Volver al catálogo" y "Agregar al carrito"](./evidence/fake-store-2026-10-04/04-fixtures-pdp-desktop.png)
+
+![Captura 05: PLP con fixtures y el desplegable de categorías abierto](./evidence/fake-store-2026-10-04/05-fixtures-plp-categories.png)
+
+La captura móvil de la PLP con fixtures se revisó durante la validación, pero no se guardó como archivo en el repo.
+
+**Garantías sobre producción:**
+- Producción usa siempre Fake Store API (`live`). `resolveProductsDataSource` devuelve `live` cuando `NODE_ENV === "production"`, aunque `PRODUCTS_DATA_SOURCE` esté definido. Cubierto por `tests/products.test.ts` (`forces live in production even when fixtures are requested`).
+- Los fixtures solo se activan con `PRODUCTS_DATA_SOURCE=fixtures` fuera de producción.
+- Los fixtures no son un fallback automático. Cuando la API falla en modo `live`, la aplicación devuelve el error correspondiente y no lo sustituye por datos locales.
+
+**Plan de revalidación cuando Fake Store API vuelva a responder:**
+1. `GET /products`, `GET /products/categories` y `GET /products/{id}` directamente, con respuesta HTTP 200 y payload válido.
+2. PLP con datos reales: listado, estado success, categorías, filtro por categoría, búsqueda y ordenamiento por precio, con la URL como única fuente del estado.
+3. PDP con datos reales: `/products/[id]`, metadata (título, descripción, Open Graph) y el botón "Agregar al carrito" con un producto real.
+4. Caso `200 + null` y payloads inesperados, verificando que se normalizan a `invalid_payload` o `not_found` según corresponda.
+5. Verificación en runtime de la Data Cache ante fallo de revalidación (pendiente en CHECKLIST).
+
+**Posición frente al reto:** la integración se implementó contra la API requerida por el reto y no se modificó su contrato. Durante la validación final el proveedor externo no respondió, por lo que la validación con datos reales no pudo completarse en ese momento. El resto de la solución es verificable con fixtures, y la integración real sigue siendo la fuente de datos de producción.
+
 ---
 
 ## DEC-012 — Optimización del LCP del primer bloque del PLP
@@ -353,7 +398,7 @@ Permite validar la interfaz y los flujos de forma determinista, sin depender de 
 En el listado, la primera tarjeta es la imagen de mayor tamaño visible al cargar la página y, por tanto, el LCP. Por defecto `next/image` aplica lazy loading, y en desarrollo Next.js emitía un aviso de LCP.
 
 **Decision:**
-`ProductCard` acepta `priority?: boolean` y pasa esa prop a `next/image`. La página marca con `priority` las primeras 4 tarjetas del listado. El resto de tarjetas mantiene el lazy loading por defecto.
+`ProductCard` acepta `priority?: boolean` y pasa esa prop a `next/image`. La página marca con `priority` las primeras 4 tarjetas del listado. El resto de tarjetas mantiene el lazy loading por defecto. La imagen de la PDP (`ProductDetails`) también se marca con `priority`, porque es el primer bloque visible de esa página.
 
 **Rationale:**
 El primer bloque visible debe cargarse sin diferirse. Las demás imágenes siguen diferidas para no competir con el LCP.
@@ -361,6 +406,7 @@ El primer bloque visible debe cargarse sin diferirse. Las demás imágenes sigue
 **Consequences:**
 - El número 4 es una constante de la página. Si cambia el número de columnas de la rejilla, conviene revisarlo.
 - Validado: el aviso de LCP desapareció al validar con fixtures (reportado en la validación visual del PLP).
+- La medición de LCP con Lighthouse sobre build de producción sigue pendiente (ver CHECKLIST).
 
 ---
 

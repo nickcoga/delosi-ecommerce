@@ -78,11 +78,11 @@ Implementada en el checkpoint PLP + PDP. La validación de los estados success y
 - Ruta `/products`, implementada como Server Component que lee `searchParams` y compone la UI en servidor.
 - Filtros por categoría, búsqueda por texto y ordenamiento reflejados en la URL, para que la página sea enlazable, compartible y navegable con el botón "atrás".
 - Filtros y búsqueda implementados como Client Component (`ProductFilters`) que navega con `router.push` usando `buildProductsHref()`. Los controles reciben sus valores desde la URL en el servidor, así que el HTML inicial ya refleja los parámetros. Se eligió frente a enlaces y formularios GET sin JS; la decisión queda registrada en "Decisiones de implementación".
-- Loading state con `loading.tsx` estándar del App Router, solo en el PLP: `app/(catalog)/products/loading.tsx`, junto a `app/(catalog)/products/page.tsx`. La PDP (`app/products/[id]/`) no tiene loading propio y queda fuera del route group, para que su `notFound()` produzca HTTP 404 real (ver "Decisiones de implementación"). Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual desktop y mobile, el comportamiento y el foco durante navegación de filtros, y el CLS real quedan pendientes; requieren datos success de Fake Store API.
+- Loading state con `loading.tsx` estándar del App Router, solo en el PLP: `app/(catalog)/products/loading.tsx`, junto a `app/(catalog)/products/page.tsx`. La PDP (`app/products/[id]/`) no tiene loading propio y queda fuera del route group, para que su `notFound()` produzca HTTP 404 real (ver "Decisiones de implementación"). Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual del PLP con fixtures está hecha en desktop y mobile. Quedan pendientes la validación visual del skeleton, el foco durante navegación de filtros, el CLS real y la validación con datos success de Fake Store API.
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
 - **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido e implementado):** caché de datos de Next.js mediante `fetch` con `next.revalidate: 3600`, aplicada en `fetchFakeStoreJson` y compartida por productos, categorías y detalle. La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
 
-Optimización de imágenes del primer bloque: `ProductCard` acepta `priority?: boolean`. Las primeras 4 tarjetas del listado lo reciben, porque forman el primer bloque visible y su imagen suele ser el LCP. El resto mantiene el lazy loading por defecto. Ver [DEC-012](./DECISIONS.md).
+Optimización de imágenes del primer bloque: `ProductCard` acepta `priority?: boolean`. Las primeras 4 tarjetas del listado lo reciben, porque forman el primer bloque visible y su imagen suele ser el LCP. El resto mantiene el lazy loading por defecto. La imagen de la PDP (`ProductDetails`) también usa `priority`, por ser su primer bloque visible. Ver [DEC-012](./DECISIONS.md).
 
 ## Contrato conceptual del PLP
 
@@ -127,7 +127,7 @@ ProductsQuery
 
 **Reglas conceptuales de normalización y validación:**
 - Los parámetros fuera de este contrato se ignoran.
-- Si un parámetro aparece varias veces, se considera solo el primer valor (*propuesto*).
+- Si un parámetro aparece varias veces, se considera solo el primer valor (implementado en `parseProductsQuery`, que usa `params.get`).
 - `q`: se eliminan espacios al inicio y al final, se colapsan los espacios internos, y la comparación no distingue mayúsculas. Tiene una longitud máxima razonable (valor exacto pendiente).
 - `category`: si corresponde a una categoría presente en el catálogo obtenido, se aplica; si no, se ignora y la query se trata como si no tuviera categoría. Nunca produce 404 ni 500.
 - `sort`: solo `price-asc` y `price-desc`; los valores desconocidos se ignoran.
@@ -182,12 +182,12 @@ Implementado en `lib/products/types.ts`.
 - El modelo pertenece al proyecto: sus nombres de campo y tipos se definen en el proyecto, no se derivan del DTO de Fake Store API.
 - El DTO externo (respuesta cruda de Fake Store API) vive únicamente en la capa de acceso a datos. No se propaga a la UI ni al dominio.
 - **Responsabilidad de transformación:** convertir DTO → `Product` en la capa de acceso a datos (o en un mapeador junto a ella). Es el único punto que conoce la forma externa; si la API cambia, el impacto queda acotado ahí.
-- La transformación incluye validar la forma recibida antes de convertirla. Cómo se valida (guards manuales o librería) queda pendiente.
-- El mapper vive junto a la capa de acceso a datos. Su tipo de entrada es `FakeStoreProductDTO` y su salida es `Product`. No se crean tipos ni mapper en esta fase.
+- La transformación incluye validar la forma recibida antes de convertirla. La validación usa guards manuales, sin librería, en `lib/products/fake-store/dto.ts`.
+- El mapper está implementado en `lib/products/fake-store/mapper.ts`, junto a la capa de acceso a datos. Su tipo de entrada es `FakeStoreProductDTO` y su salida es `Product`.
 
 ## Acceso a datos
 
-Cadena de llamadas implementada en `lib/products/catalog.ts` (la página `/products` todavía no la usa):
+Cadena de llamadas implementada en `lib/products/catalog.ts` y usada por la página `/products`:
 
 ```text
 Products Page
@@ -211,16 +211,16 @@ Responsabilidades (la capa de datos está implementada en `lib/products/`; la UI
 - **Acceso a datos (data access):** HTTP hacia Fake Store API desde el servidor ([DEC-008](./DECISIONS.md)), DTO, mapper a `Product`, y normalización de errores (red, timeout, 5xx, 522) en resultados controlados. La caché y revalidación de 3600 segundos se aplican en esta capa ([DEC-009](./DECISIONS.md)).
 - **Routing y Server Components (`app/`):** lee `searchParams`, llama a `parseProductsQuery()` y `getProducts()`, y compone la página.
 - **Dominio / modelado:** modelo `Product`, normalización de los `searchParams` en una consulta tipada (`ProductsQuery`), y funciones puras de filtrado por categoría, búsqueda y orden. No conoce React, `fetch` ni la forma del DTO.
-- **UI:** Server Components que componen la página, la lista, las tarjetas y los filtros; Client Components solo donde haya interacción requerida (`CartCounter`, `AddToCartButton`). Recibe datos ya transformados.
+- **UI:** Server Components que componen la página, la lista y las tarjetas (`ProductCard` no tiene estado). Client Components solo donde haya interacción requerida: `ProductFilters`, `CartCounter` y `AddToCartButton`. Recibe datos ya transformados.
 
-Mapeo conceptual de carpetas (nombres orientativos; la estructura definitiva sigue abierta):
+Mapeo de carpetas implementado (la estructura definitiva por dominio sigue abierta):
 
 ```text
-app/          routing + Server Components
-data access/  HTTP + DTO + mapper + errores normalizados
-domain/       Product + ProductsQuery + contratos de aplicación
-components/   presentación e interacción
-lib/cart/     Zustand + persistencia (DEC-007)
+app/                        routing + Server Components (app/(catalog)/products, app/products/[id])
+lib/products/fake-store/    acceso a datos: HTTP, guards DTO, mapper a Product
+lib/products/               tipos, parseProductsQuery, applyProductsQuery, getProducts/getCategories/getProduct
+components/products/        presentación e interacción del catálogo (ProductFilters como island)
+lib/cart/                   Zustand + persistencia (DEC-007)
 ```
 
 Dependencias permitidas, en este sentido:
@@ -252,8 +252,8 @@ Definidos a nivel de comportamiento; su implementación técnica está pendiente
 
 - **loading:** la lista de productos o las categorías aún no están disponibles. Se muestra la estructura de la página sin saltos de diseño.
 - **success:** hay al menos un producto que cumple los filtros activos. Se muestran la lista y los controles con su estado actual.
-- **empty:** la consulta es válida y la API respondió, pero ningún producto cumple los filtros. Se muestra un mensaje y la opción de quitar filtros. No es error.
-- **error:** la API no respondió o devolvió una respuesta inesperada (red, timeout, 5xx, 522 o respuesta inválida). Se muestra un mensaje explicativo y la opción de reintentar; la página no queda en blanco ni rota. Es el mínimo defensivo de la sección de resiliencia.
+- **empty:** la consulta es válida y la API respondió, pero ningún producto cumple los filtros. Se muestra un mensaje; el usuario ajusta los filtros desde los controles superiores. No hay botón específico de "quitar filtros" (no implementado). No es error.
+- **error:** la API no respondió o devolvió una respuesta inesperada (red, timeout, 5xx, 521/522 o respuesta inválida). Se muestra un mensaje explicativo; la página no queda en blanco ni rota. Es el mínimo defensivo de la sección de resiliencia. El botón de reintento no está implementado (ver "Retry").
 
 Diferencia obligatoria:
 
@@ -268,9 +268,10 @@ Reglas de frontera: una categoría sin productos es `empty`, no `error`. Un par�
 
 ## Retry
 
+- Estado actual: no implementado. La UI del estado `error` muestra el mensaje, pero no ofrece botón de reintento.
 - Comportamiento previsto: reintento manual desde la UI del estado `error`.
-- No se implementan retries automáticos en esta fase. La intención es evitar solicitudes automáticas repetidas ante errores como el 522 observado.
-- No fuerza un bypass de la caché. Como los errores no se almacenan en caché ([DEC-009](./DECISIONS.md)), un retry tras un error vuelve a consultar al origen.
+- No se implementan retries automáticos en esta fase. La intención es evitar solicitudes automáticas repetidas ante errores como los 521/522 observados.
+- No fuerza un bypass de la caché. Se espera que los errores no se almacenen en caché ([DEC-009](./DECISIONS.md)), lo que implicaría que un retry vuelve a consultar al origen; esto está pendiente de verificación en runtime.
 
 ## Fallback de demostración (iniciativa futura)
 
@@ -326,7 +327,7 @@ Decidido e implementado ([DEC-007](./DECISIONS.md)):
 
 Se distinguen dos niveles, para no convertir una iniciativa de proactividad en requisito obligatorio:
 
-- **Mínimo defensivo esperado (alcance base, no proactividad):** si una llamada a Fake Store API falla o devuelve una respuesta inesperada, la UI no debe quedar en un estado roto o en blanco sin explicación. La resiliencia es requisito real, no teórico: durante la evaluación del 2026-10-04 la API respondió HTTP 522. Según [DEC-008](./DECISIONS.md), los errores de red, timeouts, respuestas 5xx y 522 se normalizan en la capa de acceso a datos y se exponen como estado `error` del PLP. Una respuesta válida sin productos es `empty`, no `error`. Los valores concretos de timeout y el componente que muestra el mensaje quedan para la implementación.
+- **Mínimo defensivo esperado (alcance base, no proactividad):** si una llamada a Fake Store API falla o devuelve una respuesta inesperada, la UI no debe quedar en un estado roto o en blanco sin explicación. La resiliencia es requisito real, no teórico: durante la evaluación del 2026-10-04 la API respondió HTTP 522 en `/products` y HTTP 521 en `/products/categories` (capturas en [DEC-011](./DECISIONS.md)). Según [DEC-008](./DECISIONS.md), los errores de red, timeouts, respuestas 5xx y 522 se normalizan en la capa de acceso a datos y se exponen como estado `error` del PLP. Una respuesta válida sin productos es `empty`, no `error`. Los valores concretos de timeout y el componente que muestra el mensaje quedan para la implementación.
 - **Errores contemplados por el diseño:** HTTP 522 (observado durante la evaluación de Fake Store API el 2026-10-04, y motivo principal de esta consideración), timeout, network failure, HTTP 5xx y respuestas inválidas. Todos se normalizan en la capa de acceso a datos y llegan al PLP como estado `error`.
 - **Retry manual:** ver sección "Retry". No hay retries automáticos.
 - **Caché como reducción de dependencia, no como disponibilidad:** la caché de 3600 segundos reduce las solicitudes al origen y el impacto de sus fallos, pero no garantiza disponibilidad ([DEC-009](./DECISIONS.md)).
@@ -392,12 +393,12 @@ Tomadas durante la implementación, sin abrir una DEC nueva:
 
 Explícitamente no resueltas por este documento, a definir y registrar en [DECISIONS.md](./DECISIONS.md):
 
-- Validación live (Fake Store API) de los estados success y empty del PLP, y clic real en "Agregar al carrito" de la PDP. Con fixtures, PLP, filtros y búsqueda están validados visualmente; la PDP con fixtures queda pendiente de confirmación, y Back/Forward y refresh no se han reportado como validados.
+- Validación live (Fake Store API) de los estados success y empty del PLP, y del clic en "Agregar al carrito" de la PDP con datos reales. Con fixtures, PLP, filtros, búsqueda, PDP, clic en Add to Cart y el Back del navegador desde la PDP están validados en desktop y móvil. Forward y refresh no están validados.
 - Comportamiento real de Fake Store API ante ids inexistentes: `404` frente a `200 + null` (pendiente de verificar).
 - Verificación en runtime del comportamiento de la Data Cache ante fallos de revalidación ([DEC-009](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
-- Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado solo en el PLP (`app/(catalog)/products/`); su validación visual está pendiente.
-- Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).
+- Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado solo en el PLP (`app/(catalog)/products/`); su validación visual (skeleton) está pendiente.
+- Longitud máxima de `q`: no implementada; el valor exacto sigue sin definir.
 - Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright). Hoy hay tests permanentes con `node:test` para el catálogo y el store del carrito.
 - Estructura final de carpetas por dominio.
 

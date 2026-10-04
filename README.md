@@ -20,7 +20,7 @@ Lo siguiente está verificado en el repositorio:
 - **pnpm** como package manager del proyecto (migrado desde npm), fijado vía Corepack en `package.json`: `"packageManager": "pnpm@12.8.1+sha512.f64ba907507f5ceafe06c8d38e6052d0179444580ec1279ddd5bfc11cb48aa8a2644b66598e07e761da84872a9fc57d5f902b87fa49d024198d558612aabbe45"`
 - **Zustand** 5.x con middleware `persist` (estado global del carrito, [DEC-007](docs/DECISIONS.md))
 - Repositorio Git inicializado, con commit inicial (`Initial commit from Create Next App`)
-- Remoto de GitHub configurado (`origin`). En la última verificación `main` coincidía con `origin/main`; confirmar con `git status -sb`
+- Remoto de GitHub configurado (`origin`), repositorio público. El 2026-10-04 la rama local `main` tenía commits pendientes de subir a `origin/main`; confirmar el estado actual con `git status -sb`
 
 > Cualquier otra librería, patrón o herramienta mencionada en este documento fuera de esta lista y de las decisiones registradas en [docs/DECISIONS.md](docs/DECISIONS.md) **no está instalada ni implementada todavía**. Ver [docs/DECISIONS.md](docs/DECISIONS.md) para decisiones pendientes y [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para el espacio de decisión arquitectónica.
 
@@ -72,13 +72,13 @@ Git Bash:
 PRODUCTS_DATA_SOURCE=fixtures pnpm dev
 ```
 
-Para volver al modo live, arranca el servidor sin la variable (`pnpm dev`). En producción la aplicación usa siempre Fake Store API. Los fixtures no son un requisito de producción.
+Para volver al modo live, arranca el servidor sin la variable (`pnpm dev`). En producción la aplicación usa siempre Fake Store API. Los fixtures no son un requisito de producción y no son un fallback: si Fake Store API falla, la aplicación muestra el estado de error correspondiente.
 
 ## Estructura inicial del proyecto
 
 ```
 delosi-ecommerce/
-├── app/                # App Router (layout, page, products/ PLP y products/[id] PDP)
+├── app/                # App Router (layout, page redirige a /products; (catalog)/products PLP; products/[id] PDP)
 ├── components/         # Componentes React (Header, CartCounter, AddToCartButton, products/)
 ├── lib/                # Lógica compartida (cart/ con Zustand, products/ con la capa de datos)
 ├── public/              # Assets estáticos (incluye fixtures de imágenes)
@@ -110,15 +110,15 @@ delosi-ecommerce/
 
 **Fase actual: checkpoint documental tras PLP, PDP, fixtures, optimización LCP y carrito.** La validación contra Fake Store API real sigue pendiente porque el servicio no ha estado disponible.
 
-- Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente. Tests permanentes del carrito en `tests/cart.test.ts` (15/15). La demo temporal de `app/page.tsx` sigue activa hasta el bloque de Home.
+- Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado con fixtures y con persistencia comprobada. Tests permanentes del carrito en `tests/cart.test.ts` (15/15). La demo temporal de `app/page.tsx` fue retirada: `/` redirige de forma permanente a `/products`.
 - Implementado en `lib/products/` y en la UI: contrato de URL del PLP (`category`, `q`, `sort`), parser, modelo `Product`, capa de acceso a datos con caché de 3600 s y normalización de errores ([DEC-010](docs/DECISIONS.md)). Pendiente de validación contra la API real.
 - Implementado: UI del PLP (búsqueda, categoría y orden desde la URL) y estados success, empty y error. Validado visualmente con fixtures en desktop y mobile. Pendiente: validación de success y empty con datos reales de Fake Store API, y retry manual.
 - Implementado: fixtures de desarrollo y test (`PRODUCTS_DATA_SOURCE=fixtures`, solo fuera de producción; ver [DEC-011](docs/DECISIONS.md)) y optimización LCP de las 4 primeras tarjetas del PLP ([DEC-012](docs/DECISIONS.md)).
-- Limitación conocida: Fake Store API ha respondido HTTP 521/522 durante la implementación. Las validaciones con datos reales están pendientes.
+- Limitación conocida: Fake Store API respondió HTTP 521 y 522 durante la validación del 2026-10-04 (evidencia y detalle en [DEC-011](docs/DECISIONS.md#dec-011--fixtures-explícitos-de-desarrollo-y-test)). Las validaciones con datos reales están pendientes de que el servicio vuelva a responder.
 - Implementado: PDP `/products/[id]` con metadata dinámica, página not-found y `AddToCartButton` sobre el store existente. Pendiente: validación del estado success con datos reales.
 - Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
 - Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementado en `lib/products/fake-store/client.ts`. Verificación en runtime pendiente.
-- Implementado: `loading.tsx` con skeletons para PLP y PDP. Validado estructuralmente; la validación visual, el foco durante navegación de filtros y el CLS real están pendientes.
+- Implementado: `loading.tsx` con skeleton para el PLP (la PDP no tiene skeleton propio, para mantener el 404 real). Validado estructuralmente; la validación visual del skeleton, el foco durante navegación de filtros y el CLS real están pendientes.
 - Pendiente de decisión: herramienta de testing definitiva (hoy `node:test`, sin dependencias nuevas).
 - Sin implementar: Suspense granular, `error.tsx`, retry manual y fallback de demostración.
 

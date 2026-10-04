@@ -317,7 +317,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 
 ## DEC-011 — Fixtures explícitos de desarrollo y test
 
-**Status:** Accepted — implementado y validado visualmente en desarrollo con fixtures. La validación contra Fake Store API real sigue pendiente.
+**Status:** Accepted — implementado. El PLP está validado visualmente en desarrollo con fixtures; la PDP con fixtures queda pendiente de confirmación. La validación contra Fake Store API real sigue pendiente.
 
 **Context:**
 Fake Store API ha estado no disponible (HTTP 521/522) durante la implementación del PLP y la PDP. Sin datos de éxito no se pueden validar visualmente el listado, los filtros, la PDP ni el flujo del carrito con datos reales.
@@ -340,7 +340,7 @@ Permite validar la interfaz y los flujos de forma determinista, sin depender de 
 **Consequences:**
 - Trade-off: el modo fixtures no valida la disponibilidad ni el contrato real de Fake Store API. La integración live debe validarse cuando la API responda.
 - Las imágenes de fixtures son locales (`public/fixtures/products/`) y no sustituyen las imágenes reales de Fake Store API.
-- Los tests del catálogo usan el runner nativo de Node (`node:test`) con un loader de alias, sin dependencias nuevas. La elección de herramienta de testing sigue abierta.
+- Los tests del catálogo y del store del carrito usan el runner nativo de Node (`node:test`) con un loader de alias, sin dependencias nuevas. La elección de herramienta de testing sigue abierta.
 
 ---
 

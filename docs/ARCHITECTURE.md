@@ -38,7 +38,7 @@ Este documento describe la **arquitectura objetivo** del reto: la organización 
 - Botón "Agregar al carrito" y cualquier UI que lea/actualice el estado del carrito.
 - Contador de ítems en el Header.
 
-**Pendiente:** el límite exacto de qué sub-componentes de filtros serán Server vs. Client, y el mecanismo concreto de sincronización entre Server Components y el estado de Search Params, se definirá durante la implementación.
+**Resuelto en la implementación:** `ProductFilters` es el único Client Component del PLP. Escribe la URL con `buildProductsHref` y `router.push`; la lista, las categorías y los productos siguen en Server Components leyendo los `searchParams`.
 
 ## Integración con Fake Store API
 
@@ -48,7 +48,7 @@ Este documento describe la **arquitectura objetivo** del reto: la organización 
 - `GET /products/categories` — categorías para filtrado en PLP.
 - `GET /products/{id}` — detalle para PDP.
 
-**Pendiente:** la forma concreta de la capa de acceso a datos (ubicación del código, manejo de errores de red, tipado de las respuestas) se definirá en la implementación.
+**Implementado:** la capa de acceso a datos vive en `lib/products/`. Valida las respuestas con guards de tipo, normaliza los errores de red y HTTP, y no depende de componentes React.
 
 ## Fuente de datos: live y fixtures
 
@@ -71,7 +71,7 @@ Fixture DTO → la misma validación DTO → el mismo mapper → Product → el 
 - Los fixtures son 8 productos (`lib/products/fixtures/products.ts`) con imágenes locales en `public/fixtures/products/`. Permiten validar visualmente PLP y PDP cuando Fake Store API no está disponible. No son una recomendación de producción ni sustituyen las imágenes reales de Fake Store API.
 - Limitación: el modo fixtures no valida la disponibilidad ni el contrato real de Fake Store API. La integración live debe validarse cuando la API responda.
 
-## Estrategia prevista para PLP
+## Estrategia del PLP
 
 Implementada en el checkpoint PLP + PDP. La validación de los estados success y empty con datos reales queda pendiente de Fake Store API:
 
@@ -313,6 +313,9 @@ Decidido e implementado ([DEC-007](./DECISIONS.md)):
 - Estado global con Zustand (`lib/cart/store.ts`), persistencia en `localStorage` mediante el middleware `persist` y flag `hasHydrated` para gestionar la hidratación.
 - `CartCounter` (Header) y `AddToCartButton` son los únicos Client Components que leen o escriben el store.
 - Fuera de alcance actual: sincronización entre pestañas y `clearCart`.
+- Flujo implementado desde la PDP: `ProductDetails` (Server) → `getProduct` → `Product` → `AddToCartButton` (Client, mapea `id → productId` e `imageUrl → image`) → `addItem` → Zustand con `persist` → `localStorage["delosi-cart"]` → `CartCounter` (Client, dentro de `Header` en el layout).
+- Tests: `tests/cart.test.ts` cubre el store (estado inicial, duplicados, cantidades, `setQuantity`, `removeItem`, contador y persistencia). No cubre el render de componentes.
+- Hidratación: sin hydration mismatch reproducido en desarrollo ni producción. En desarrollo el contador aparece unos ~200 ms después de la carga; es una observación menor, no bloqueante.
 
 ## Performance y testing como preocupaciones arquitectónicas
 
@@ -338,7 +341,7 @@ flowchart TD
 
     AppRouter --> PLP["PLP — Server Component\n/products"]
     AppRouter --> PDP["PDP — Server Component\n/products/[id]"]
-    AppRouter --> Header["Header — Client Component\nContador de carrito"]
+    AppRouter --> Header["Header — Server Component\nCartCounter (Client): contador de carrito"]
 
     PLP --> Domain["Dominio / Servicios\n(filtrado, orden, acceso a datos)"]
     PDP --> Domain
@@ -350,7 +353,7 @@ flowchart TD
     CartState --> Header
 ```
 
-## Flujo de datos previsto — PLP
+## Flujo de datos — PLP
 
 ```mermaid
 flowchart TD
@@ -364,7 +367,7 @@ flowchart TD
     PLPServer --> UI["UI — lista de productos\n(loading, success, empty, error)"]
 ```
 
-## Flujo de datos previsto — Carrito
+## Flujo de datos — Carrito
 
 ```mermaid
 flowchart LR
@@ -393,7 +396,7 @@ Explícitamente no resueltas por este documento, a definir y registrar en [DECIS
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
 - Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado en PLP y PDP; su validación visual está pendiente.
 - Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).
-- Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright).
+- Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright). Hoy hay tests permanentes con `node:test` para el catálogo y el store del carrito.
 - Estructura final de carpetas por dominio.
 
-Resueltas desde la última versión de este documento: tecnología y persistencia del estado del carrito ([DEC-007](./DECISIONS.md)); forma de validar la respuesta externa (guards manuales, sin librería, en `lib/products/fake-store/dto.ts`).
+Resueltas desde la última versión de este documento: tecnología y persistencia del estado del carrito ([DEC-007](./DECISIONS.md)); forma de validar la respuesta externa (guards manuales, sin librería, en `lib/products/fake-store/dto.ts`); tests permanentes del store del carrito (`tests/cart.test.ts`).

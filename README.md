@@ -26,7 +26,7 @@ Lo siguiente está verificado en el repositorio:
 
 ## Requisitos para ejecutar localmente
 
-- Node.js (versión compatible con Next.js 16 / React 19)
+- Node.js 22 o superior (compatible con Next.js 16 / React 19; los tests usan `--experimental-strip-types`, disponible en Node 22)
 - pnpm (gestor de paquetes usado por el proyecto; ver `pnpm-lock.yaml` y el campo `packageManager` en `package.json`). Se recomienda habilitarlo vía Corepack (`corepack enable`), incluido con Node.js.
 
 ## Comandos básicos
@@ -46,9 +46,15 @@ pnpm start
 
 # Lint
 pnpm lint
+
+# Typecheck
+pnpm exec tsc --noEmit
+
+# Tests (ver sección Testing)
+pnpm test
 ```
 
-La aplicación en desarrollo queda disponible en [http://localhost:3000](http://localhost:3000).
+La aplicación en desarrollo queda disponible en [http://localhost:3000](http://localhost:3000). `pnpm start` sirve el build de producción en el mismo puerto por defecto; en producción la aplicación usa siempre Fake Store API, aunque `PRODUCTS_DATA_SOURCE` esté definido.
 
 ## Datos de desarrollo (fixtures)
 
@@ -75,7 +81,8 @@ delosi-ecommerce/
 ├── app/                # App Router (layout, page, products/ PLP y products/[id] PDP)
 ├── components/         # Componentes React (Header, CartCounter, AddToCartButton, products/)
 ├── lib/                # Lógica compartida (cart/ con Zustand, products/ con la capa de datos)
-├── public/              # Assets estáticos
+├── public/              # Assets estáticos (incluye fixtures de imágenes)
+├── tests/               # Tests con node:test (catálogo y carrito)
 ├── docs/                 # Documentación técnica del reto
 │   ├── CHECKLIST.md
 │   ├── ARCHITECTURE.md
@@ -101,16 +108,19 @@ delosi-ecommerce/
 
 ## Estado del proyecto
 
-**Fase actual: checkpoint PLP + PDP cerrado.** La validación de los estados con datos reales de éxito está pendiente, porque Fake Store API no estaba disponible durante este checkpoint.
+**Fase actual: checkpoint documental tras PLP, PDP, fixtures, optimización LCP y carrito.** La validación contra Fake Store API real sigue pendiente porque el servicio no ha estado disponible.
 
-- Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente mediante una demo temporal en `app/page.tsx`.
+- Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente. Tests permanentes del carrito en `tests/cart.test.ts` (15/15). La demo temporal de `app/page.tsx` sigue activa hasta el bloque de Home.
 - Implementado en `lib/products/` y en la UI: contrato de URL del PLP (`category`, `q`, `sort`), parser, modelo `Product`, capa de acceso a datos con caché de 3600 s y normalización de errores ([DEC-010](docs/DECISIONS.md)). Pendiente de validación contra la API real.
-- Implementado: UI del PLP (búsqueda, categoría y orden desde la URL) y estados success, empty y error. Pendiente: validación de success y empty con datos reales, `loading.js` y retry manual.
+- Implementado: UI del PLP (búsqueda, categoría y orden desde la URL) y estados success, empty y error. Validado visualmente con fixtures en desktop y mobile. Pendiente: validación de success y empty con datos reales de Fake Store API, y retry manual.
+- Implementado: fixtures de desarrollo y test (`PRODUCTS_DATA_SOURCE=fixtures`, solo fuera de producción; ver [DEC-011](docs/DECISIONS.md)) y optimización LCP de las 4 primeras tarjetas del PLP ([DEC-012](docs/DECISIONS.md)).
+- Limitación conocida: Fake Store API ha respondido HTTP 521/522 durante la implementación. Las validaciones con datos reales están pendientes.
 - Implementado: PDP `/products/[id]` con metadata dinámica, página not-found y `AddToCartButton` sobre el store existente. Pendiente: validación del estado success con datos reales.
 - Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
 - Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementado en `lib/products/fake-store/client.ts`. Verificación en runtime pendiente.
 - Implementado: `loading.tsx` con skeletons para PLP y PDP. Validado estructuralmente; la validación visual, el foco durante navegación de filtros y el CLS real están pendientes.
-- Sin implementar: testing, Suspense granular, `error.tsx`, retry manual y fallback de demostración.
+- Pendiente de decisión: herramienta de testing definitiva (hoy `node:test`, sin dependencias nuevas).
+- Sin implementar: Suspense granular, `error.tsx`, retry manual y fallback de demostración.
 
 Los documentos en `docs/` definen el alcance, registran las decisiones tomadas y las pendientes, y sirven de checklist de avance.
 
@@ -127,23 +137,31 @@ Resumen del alcance funcional y técnico exigido por el reto (fuente: *Reto Téc
 
 Ver detalle completo y seguimiento en [docs/CHECKLIST.md](docs/CHECKLIST.md).
 
+## Arquitectura resumida
+
+- **Catálogo (server state):** `/products` y `/products/[id]` son Server Components. `/products` lee los `searchParams`, los parsea con `parseProductsQuery` y consulta `getProducts`/`getCategories`. `/products/[id]` consulta `getProduct`. La capa de datos vive en `lib/products/`: Fake Store API → DTO validado → mapper → `Product`. Las respuestas se cachean con `revalidate: 3600`.
+- **Carrito (client state):** Zustand con `persist` en `localStorage["delosi-cart"]`. Lo escriben `AddToCartButton` (PDP) y lo lee `CartCounter` (Header).
+- **Fuente de datos:** `live` por defecto y en producción; `fixtures` solo en desarrollo y test. Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Decisiones técnicas
 
-El stack base (Next.js App Router, TypeScript, Tailwind CSS, Fake Store API, Git/GitHub) ya está confirmado durante este bootstrap y registrado en [docs/DECISIONS.md](docs/DECISIONS.md). Además, ya existen decisiones iniciales de diseño/arquitectura — como el enfoque Server-first con Server Components para la carga inicial, la integración con Fake Store API y la separación conceptual entre UI, dominio/servicios y acceso a datos —, documentadas con su contexto en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Esto no implica que todas las decisiones de implementación del reto estén cerradas: el estado del carrito quedó decidido e implementado ([DEC-007](docs/DECISIONS.md)); el acceso a datos del PLP está decidido en server-side ([DEC-008](docs/DECISIONS.md)) y la política de caché y revalidación de 3600 segundos está decidida ([DEC-009](docs/DECISIONS.md)); el testing y la estructura final de carpetas por dominio siguen pendientes. El contrato conceptual del PLP está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+El stack base (Next.js App Router, TypeScript, Tailwind CSS, Fake Store API, Git/GitHub) ya está confirmado durante este bootstrap y registrado en [docs/DECISIONS.md](docs/DECISIONS.md). Además, ya existen decisiones iniciales de diseño/arquitectura — como el enfoque Server-first con Server Components para la carga inicial, la integración con Fake Store API y la separación conceptual entre UI, dominio/servicios y acceso a datos —, documentadas con su contexto en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Esto no implica que todas las decisiones de implementación del reto estén cerradas: el estado del carrito quedó decidido e implementado ([DEC-007](docs/DECISIONS.md)); el acceso a datos del PLP está decidido en server-side ([DEC-008](docs/DECISIONS.md)) y la política de caché y revalidación de 3600 segundos está decidida ([DEC-009](docs/DECISIONS.md)); los fixtures de desarrollo ([DEC-011](docs/DECISIONS.md)) y la optimización LCP ([DEC-012](docs/DECISIONS.md)) están decididos e implementados; la herramienta de testing y la estructura final de carpetas por dominio siguen pendientes. El contrato conceptual del PLP está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Testing
 
-Tests del catálogo con un runner temporal sin dependencias (`node:test`), pendiente de la decisión de herramienta:
+Tests permanentes con el runner nativo de Node (`node:test`), sin dependencias nuevas: catálogo (19) y carrito (15), 34/34 en verde. La herramienta de testing definitiva sigue pendiente de decisión.
 
 ```bash
-node --experimental-strip-types --import ./tests/register.mjs --test tests/products.test.ts
+pnpm test
 ```
+
+El script ejecuta `node --experimental-strip-types --import ./tests/register.mjs --test tests/products.test.ts tests/cart.test.ts`. Requiere Node 22 o superior.
 
 Pendiente de definición. El reto sugiere Jest, React Testing Library, Cypress o Playwright como herramientas posibles. La estrategia definitiva (unitario vs. integración, alcance, herramienta) se registrará en [docs/DECISIONS.md](docs/DECISIONS.md) cuando se tome.
 
 ## Performance
 
-Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift) y caché de datos con `revalidate: 3600`. Pendiente de validación con datos reales.
+Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift), optimización LCP del primer bloque del PLP ([DEC-012](docs/DECISIONS.md)) y caché de datos con `revalidate: 3600`. Pendiente de validación con datos reales.
 
 ## Iniciativas de proactividad
 

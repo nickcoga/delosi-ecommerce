@@ -63,6 +63,11 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 |---|---|---|
 | Estado global del carrito | 🟢 | Implementado con Zustand (`lib/cart/store.ts`) y validado manualmente — ver [DEC-007](./DECISIONS.md) |
 | Contador de ítems reflejado en el Header | 🟢 | Implementado (`CartCounter`) y validado manualmente, incluyendo recuperación tras refresh |
+| Persistencia en `localStorage["delosi-cart"]` | 🟢 | Validada manualmente y en producción (carga directa, refresh, navegación PLP → PDP → PLP); cubierta por tests |
+| Mismo producto: incrementa cantidad sin duplicar la línea | 🟢 | Cubierto por `tests/cart.test.ts` |
+| Hidratación del `CartCounter` | 🟢 | Sin hydration mismatch reproducido en desarrollo ni producción. Observación menor no bloqueante: en desarrollo el contador aparece ~200 ms después de la carga |
+| Integración PDP → `AddToCartButton` → Zustand → `CartCounter` | 🟡 | Mapeo verificado y store probado; el clic visual en la PDP con datos reales o fixtures no está confirmado |
+| Tests del carrito | 🟢 | 15/15 en `tests/cart.test.ts`: estado inicial, duplicados, cantidades, `setQuantity`, `removeItem`, contador y persistencia |
 
 > Nota: validado hasta ahora mediante la superficie de demostración temporal en `app/page.tsx` La PDP `/products/[id]` ya existe; el clic real en su botón "Agregar al carrito" queda pendiente de validar con datos reales de la API.
 
@@ -83,7 +88,7 @@ Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las 
 | PDP: 404 para ids no válidos y HTTP 404 en `not-found.tsx` | PASS |
 | PDP: metadata del not-found no usa el título genérico del layout | PASS |
 | PDP: estado de error sin convertirlo en 404 ni en producto vacío | PASS (API caída) |
-| Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (validado con el store compilado) |
+| Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (tests permanentes 15/15) |
 | Validación visual de la PDP en estado success | PENDIENTE (requiere datos reales) |
 | Validación visual de la PLP con fixtures (success, empty, filtros, orden, responsive) | PASS (fixtures) |
 | Validación de la PLP contra Fake Store API real (success, empty, categorías) | PENDIENTE (API caída) |
@@ -107,9 +112,9 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | 8 productos fixture e imágenes locales (`public/fixtures/products/`) | 🟢 | Imágenes locales; no sustituyen las de Fake Store |
 | PLP visual con fixtures: success, cards, imágenes, responsive desktop y mobile | 🟢 | Validado visualmente |
 | Filtros, búsqueda y orden con fixtures | 🟢 | Validación reportada |
-| Add to Cart con el mismo `Product` | 🟢 | Validación reportada |
+| Add to Cart con el mismo `Product` (superficie PDP) | 🟡 | El store y el mapeo están probados; el clic visual en la PDP con fixtures no está confirmado |
 | Optimización LCP: `priority` en las 4 primeras tarjetas ([DEC-012](./DECISIONS.md)) | 🟢 | Aviso de LCP resuelto |
-| Tests del catálogo: 19/19 | 🟢 | Runner `node:test`, sin dependencias nuevas |
+| Tests del catálogo: 19/19 (suite completa 34/34 con carrito) | 🟢 | Runner `node:test`, sin dependencias nuevas |
 | PDP visual con fixtures | 🟡 | Pendiente de confirmación |
 | Navegación Back/Forward y refresh con fixtures | 🟡 | No reportado como validado |
 
@@ -140,8 +145,8 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Arquitectura modular / orientada a dominio (principio) | 🔵 | Principio adoptado; aplicación concreta en código pendiente |
-| Separación Server Components / Client Components (reglas generales) | 🔵 | Server-first decidido; límites exactos por sub-componente pendientes de implementación |
+| Arquitectura modular / orientada a dominio (principio) | 🟡 | Aplicada en `lib/products/` y `lib/cart/`; la estructura final de carpetas sigue abierta |
+| Separación Server Components / Client Components (reglas generales) | 🟢 | Islas cliente implementadas: `ProductFilters`, `ProductCard` (sin estado), `AddToCartButton`, `CartCounter`. El resto son Server Components |
 | Escalabilidad y colaboración entre desarrolladores | 🔵 | Objetivo de diseño adoptado; se valida con la implementación y el code review |
 | SOLID / Clean Code | 🔵 | Principio adoptado como guía de implementación; ver punto ambiguo #2 |
 | Estructura final de carpetas por dominio | ⚪ | Decisión abierta — ver [ARCHITECTURE.md](./ARCHITECTURE.md) |
@@ -179,8 +184,9 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | Ítem | Estado | Nota |
 |---|---|---|
 | Estrategia definitiva de testing (alcance y herramienta) | ⚪ | Ver punto ambiguo #4 |
-| Testing unitario | ⚪ | — |
-| Testing de integración / e2e | ⚪ | — |
+| Testing unitario — catálogo | 🟢 | `tests/products.test.ts` (19/19) con `node:test` |
+| Testing unitario — carrito (store) | 🟢 | `tests/cart.test.ts` (15/15). No cubre el render de componentes |
+| Testing de integración / e2e | ⚪ | Sin implementar |
 
 > Nota: cuando se defina la estrategia de testing, debe considerarse la cobertura de **critical business flows** del reto — como mínimo, filtrado/búsqueda de productos (PLP) y agregar productos al carrito. Esto no decide todavía framework, herramienta, cantidad de tests ni implementación concreta.
 
@@ -203,6 +209,7 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 |---|---|---|
 | Repositorio público | ⚪ | Visibilidad real del repo remoto no verificada desde este bootstrap — ver punto ambiguo #1 |
 | Sustentación / Code Review (arquitectura, performance y diseño) | ⚪ | Ocurre al cierre del reto |
+| Despliegue y validación final en Vercel | ⚪ | No aparece como requisito en el resumen documentado del reto; confirmar si aplica |
 
 ---
 
@@ -219,6 +226,18 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | Configuración avanzada de caché / políticas de revalidación | 💡 | Distinta de la estrategia básica de caché (sección 3), que sí es parte del alcance mínimo |
 
 ---
+
+## 6. Opcional / fuera de alcance del MVP
+
+Ítems que no forman parte del mínimo obligatorio. Se usa 💡 (iniciativa/opcional) según la convención de estados; no son pendientes del MVP.
+
+| Ítem | Estado | Nota |
+|---|---|---|
+| Página `/cart` con líneas, cantidades y total | 💡 | No aparece en el resumen de requisitos documentado. Confirmar contra el PDF original |
+| Quitar productos y vaciar el carrito desde la UI | 💡 | `removeItem` y `setQuantity` existen en el store sin UI; `clearCart` no existe (fuera de alcance, [DEC-007](./DECISIONS.md)) |
+| Checkout y pagos | 💡 | Fuera de alcance |
+| Sincronización del carrito entre pestañas | 💡 | Fuera de alcance ([DEC-007](./DECISIONS.md)) |
+| Feedback visual o `aria-live` al agregar al carrito | 💡 | No requerido por la documentación |
 
 ## Puntos ambiguos identificados (pendientes de revisión)
 

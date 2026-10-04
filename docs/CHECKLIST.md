@@ -38,7 +38,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Parser de query params (`parseProductsQuery()`) | 🟡 | Implementado en `lib/products/parse-query.ts`; probado con casos de borde |
 | Capa de acceso a datos (`getProducts`, `getCategories`) | 🟡 | Implementada en `lib/products/catalog.ts`; validación contra la API real pendiente |
 | Modelo de dominio `Product` independiente del DTO de Fake Store API | 🟡 | Implementado en `lib/products/types.ts` y `lib/products/fake-store/mapper.ts` |
-| Estados del PLP (loading, success, empty, error) | 🟡 | success y empty implementados, pendientes de validar con datos reales; error validado en runtime; `loading.js` no implementado |
+| Estados del PLP (loading, success, empty, error) | 🟡 | success y empty implementados, pendientes de validar con datos reales; error validado en runtime; `loading.tsx` implementado en PLP y PDP (validación visual pendiente) |
 | Tarjetas de producto `ProductCard` con `next/image` | 🟡 | Implementado en `components/products/ProductCard.tsx`; render con datos reales pendiente |
 | Retry manual desde la UI en estado error | 🔵 | Diseño documentado; sin retries automáticos; sin código |
 
@@ -181,7 +181,7 @@ Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las 
 
 | Ítem | Estado | Nota |
 |---|---|---|
-| Streaming + Suspense + Skeletons | 💡 | — |
+| Streaming + Suspense + Skeletons | 🟡 | `loading.tsx` de PLP (`app/products/loading.tsx`) y PDP (`app/products/[id]/loading.tsx`) implementados con skeletons estructurales; sin Suspense granular. Validado estructuralmente (lint, typecheck, build, HTML de producción). **Pendiente:** validación visual desktop y mobile, comportamiento y foco durante navegación de filtros, comparación skeleton → contenido real y CLS real (requieren datos success de Fake Store API) |
 | Resiliencia ante fallos de API (`error.js`) | 💡 | — |
 | Fallback de demostración explícito ante fallo de API | 💡 | Iniciativa documentada en [DEC-008](./DECISIONS.md); no silencioso, no persiste datos, no altera `Product`, no sustituye a la API de forma permanente. Sin implementar |
 | Empty States | 💡 | — |

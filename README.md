@@ -91,7 +91,8 @@ delosi-ecommerce/
 - Implementado: PDP `/products/[id]` con metadata dinámica, página not-found y `AddToCartButton` sobre el store existente. Pendiente: validación del estado success con datos reales.
 - Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
 - Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementado en `lib/products/fake-store/client.ts`. Verificación en runtime pendiente.
-- Sin implementar: testing, `loading.js`, Suspense, skeletons, `error.tsx`, retry manual y fallback de demostración.
+- Implementado: `loading.tsx` con skeletons para PLP y PDP. Validado estructuralmente; la validación visual, el foco durante navegación de filtros y el CLS real están pendientes.
+- Sin implementar: testing, Suspense granular, `error.tsx`, retry manual y fallback de demostración.
 
 Los documentos en `docs/` definen el alcance, registran las decisiones tomadas y las pendientes, y sirven de checklist de avance.
 
@@ -122,4 +123,4 @@ Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift)
 
 ## Iniciativas de proactividad
 
-Pendiente de implementación. Se documentará aquí qué iniciativas del reto (streaming + Suspense + skeletons, manejo de errores con `error.js`, empty states, caché avanzada, u otras) fueron efectivamente incorporadas, y cuáles quedaron fuera de alcance.
+Parcialmente implementado: skeletons con `loading.tsx` en PLP y PDP (validación visual pendiente). Pendiente: Suspense granular, manejo de errores con `error.tsx`, empty states elaborados y caché avanzada.

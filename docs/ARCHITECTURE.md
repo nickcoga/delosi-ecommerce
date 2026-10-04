@@ -57,7 +57,7 @@ Implementada en el checkpoint PLP + PDP. La validación de los estados success y
 - Ruta `/products`, implementada como Server Component que lee `searchParams` y compone la UI en servidor.
 - Filtros por categoría, búsqueda por texto y ordenamiento reflejados en la URL, para que la página sea enlazable, compartible y navegable con el botón "atrás".
 - Filtros y búsqueda implementados como Client Component (`ProductFilters`) que navega con `router.push` usando `buildProductsHref()`. Los controles reciben sus valores desde la URL en el servidor, así que el HTML inicial ya refleja los parámetros. Se eligió frente a enlaces y formularios GET sin JS; la decisión queda registrada en "Decisiones de implementación".
-- Loading state (`loading.js`) y Suspense: no implementados. Quedan para una fase posterior, distinta de la iniciativa de proactividad "Streaming + Suspense + Skeletons".
+- Loading state con `loading.tsx` estándar del App Router, con dos skeletons independientes: `app/products/loading.tsx` (PLP) y `app/products/[id]/loading.tsx` (PDP). El de `[id]` es necesario porque el `loading.tsx` de `products/` también aplica a sus segmentos hijos. Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual desktop y mobile, el comportamiento y el foco durante navegación de filtros, y el CLS real quedan pendientes; requieren datos success de Fake Store API.
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
 - **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido e implementado):** caché de datos de Next.js mediante `fetch` con `next.revalidate: 3600`, aplicada en `fetchFakeStoreJson` y compartida por productos, categorías y detalle. La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
 
@@ -368,7 +368,7 @@ Explícitamente no resueltas por este documento, a definir y registrar en [DECIS
 - Comportamiento real de Fake Store API ante ids inexistentes: `404` frente a `200 + null` (pendiente de verificar).
 - Verificación en runtime del comportamiento de la Data Cache ante fallos de revalidación ([DEC-009](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
-- `loading.js`, Suspense y `error.tsx`: no implementados.
+- Suspense granular y `error.tsx`: no implementados. `loading.tsx` implementado en PLP y PDP; su validación visual está pendiente.
 - Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).
 - Estrategia definitiva de testing (alcance y herramienta: Jest, React Testing Library, Cypress, Playwright).
 - Estructura final de carpetas por dominio.

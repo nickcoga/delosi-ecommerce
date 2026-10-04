@@ -108,7 +108,9 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Optimización de imágenes externas | 🔵 | Vía `next/image`, ya disponible en el stack decidido; sin implementar |
 | Lazy loading | 🔵 | Vía `next/image` / carga diferida de componentes; sin implementar |
 | Prevención de layout shift | 🔵 | Vía dimensionado explícito de imágenes (`next/image`); sin implementar |
-| Política de caché y revalidación del catálogo | ⚪ | Pendiente en [DEC-009](./DECISIONS.md). El acceso server-side está decidido en [DEC-008](./DECISIONS.md); no se fija ningún valor de `revalidate` |
+| Política de caché y revalidación del catálogo (3600 s) | 🔵 | Decidido y documentado en [DEC-009](./DECISIONS.md); sin implementar |
+| Implementación de caché en `getProducts` y `getCategories` | 🔵 | Planificada tras DEC-009; sin código |
+| Verificación del comportamiento de caché ante fallo de revalidación y de errores no cacheados | ⚪ | Pendiente; se verifica durante la implementación |
 
 > Nota: la configuración **avanzada** de caché/políticas de revalidación es una iniciativa de proactividad adicional (ver sección 5), distinta de la estrategia básica de arriba, que sí forma parte del alcance mínimo.
 

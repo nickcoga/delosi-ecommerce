@@ -59,7 +59,7 @@ Arquitectura objetivo (no implementada):
 - Filtros y búsqueda Server-first: enlaces (`<a>`) y formularios GET. Un Client Component solo se justifica ante una necesidad concreta de interacción inmediata (por ejemplo, búsqueda con debounce).
 - Loading state básico (`loading.js` estándar de Next.js), distinto de la iniciativa de proactividad "Streaming + Suspense + Skeletons" (ver más abajo).
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
-- **Caché y revalidación (pendiente, [DEC-009](./DECISIONS.md)):** la política concreta se decidirá según la frescura necesaria del catálogo.
+- **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido):** caché de datos de Next.js mediante `fetch`, con revalidación de 3600 segundos para productos y categorías. La implementación está pendiente.
 
 ## Contrato conceptual del PLP
 
@@ -179,12 +179,13 @@ Fake Store API
 - La página `/products` no se acopla a URLs HTTP de Fake Store API. Solo conoce `getProducts(query)`.
 - `getCategories()` encapsula el endpoint de categorías con el mismo criterio.
 - El acceso externo, incluidos HTTP, DTO, mapper y errores normalizados, queda encapsulado en la capa de acceso a datos.
+- La caché de [DEC-009](./DECISIONS.md) se aplica a la respuesta completa de `/products` y `/products/categories`, sin parámetros de query. `category`, `q` y `sort` se aplican después, en el dominio.
 
 ## Capas conceptuales del PLP
 
 No implementadas. Responsabilidades:
 
-- **Acceso a datos (data access):** HTTP hacia Fake Store API desde el servidor ([DEC-008](./DECISIONS.md)), DTO, mapper a `Product`, y normalización de errores (red, timeout, 5xx, 522) en resultados controlados. La política de caché y revalidación queda pendiente ([DEC-009](./DECISIONS.md)).
+- **Acceso a datos (data access):** HTTP hacia Fake Store API desde el servidor ([DEC-008](./DECISIONS.md)), DTO, mapper a `Product`, y normalización de errores (red, timeout, 5xx, 522) en resultados controlados. La caché y revalidación de 3600 segundos se aplican en esta capa ([DEC-009](./DECISIONS.md)).
 - **Routing y Server Components (`app/`):** lee `searchParams`, llama a `parseProductsQuery()` y `getProducts()`, y compone la página.
 - **Dominio / modelado:** modelo `Product`, normalización de los `searchParams` en una consulta tipada (`ProductsQuery`), y funciones puras de filtrado por categoría, búsqueda y orden. No conoce React, `fetch` ni la forma del DTO.
 - **UI:** Server Components que componen la página, la lista, las tarjetas y los filtros; Client Components solo donde haya interacción requerida (`CartCounter`, `AddToCartButton`). Recibe datos ya transformados.
@@ -246,7 +247,7 @@ Reglas de frontera: una categoría sin productos es `empty`, no `error`. Un par�
 
 - Comportamiento previsto: reintento manual desde la UI del estado `error`.
 - No se implementan retries automáticos en esta fase. La intención es evitar solicitudes automáticas repetidas ante errores como el 522 observado.
-- Si el retry debe pedir datos nuevos o reutilizar caché depende de [DEC-009](./DECISIONS.md).
+- No fuerza un bypass de la caché. Como los errores no se almacenan en caché ([DEC-009](./DECISIONS.md)), un retry tras un error vuelve a consultar al origen.
 
 ## Fallback de demostración (iniciativa futura)
 
@@ -301,6 +302,7 @@ Se distinguen dos niveles, para no convertir una iniciativa de proactividad en r
 - **Mínimo defensivo esperado (alcance base, no proactividad):** si una llamada a Fake Store API falla o devuelve una respuesta inesperada, la UI no debe quedar en un estado roto o en blanco sin explicación. La resiliencia es requisito real, no teórico: durante la evaluación del 2026-10-04 la API respondió HTTP 522. Según [DEC-008](./DECISIONS.md), los errores de red, timeouts, respuestas 5xx y 522 se normalizan en la capa de acceso a datos y se exponen como estado `error` del PLP. Una respuesta válida sin productos es `empty`, no `error`. Los valores concretos de timeout y el componente que muestra el mensaje quedan para la implementación.
 - **Errores contemplados por el diseño:** HTTP 522 (observado durante la evaluación de Fake Store API el 2026-10-04, y motivo principal de esta consideración), timeout, network failure, HTTP 5xx y respuestas inválidas. Todos se normalizan en la capa de acceso a datos y llegan al PLP como estado `error`.
 - **Retry manual:** ver sección "Retry". No hay retries automáticos.
+- **Caché como reducción de dependencia, no como disponibilidad:** la caché de 3600 segundos reduce las solicitudes al origen y el impacto de sus fallos, pero no garantiza disponibilidad ([DEC-009](./DECISIONS.md)).
 - **Fallback de demostración (iniciativa, no implementada):** ver sección "Fallback de demostración". Nunca silencioso, no persistido, no altera Zustand ni `Product`.
 - **Iniciativas de proactividad (no obligatorias):** manejo de errores mediante `error.js` de Next.js, Empty States elaborados, y cualquier tratamiento más allá del mínimo defensivo anterior, descritos en el PDF como ejemplos de proactividad. Su seguimiento se mantiene en [CHECKLIST.md](./CHECKLIST.md) (sección de iniciativas adicionales), para no presentarlas como requisito.
 
@@ -350,7 +352,7 @@ flowchart LR
 
 Explícitamente no resueltas por este documento, a definir y registrar en [DECISIONS.md](./DECISIONS.md):
 
-- Política concreta de caché y revalidación de datos del catálogo ([DEC-009](./DECISIONS.md), pendiente; [DEC-008](./DECISIONS.md) fija solo el acceso server-side y no fija ningún valor de `revalidate`).
+- Implementación de la caché y revalidación de 3600 segundos ([DEC-009](./DECISIONS.md), decidida; código pendiente), incluida la verificación del comportamiento ante fallo de revalidación.
 - Implementación del parser, `getProducts`, `getCategories`, mapper y tipos (trabajo posterior a [DEC-010](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.
 - Longitud máxima de `q` y tratamiento de parámetros repetidos (no definidos en el diseño aprobado).

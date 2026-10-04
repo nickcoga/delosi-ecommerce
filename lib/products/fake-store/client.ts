@@ -1,3 +1,5 @@
+import { readFixtureBody } from "@/lib/products/fixtures/fixture-body";
+import { resolveProductsDataSource } from "@/lib/products/data-source";
 import type { ProductsResult } from "@/lib/products/types";
 
 const FAKE_STORE_BASE_URL = "https://fakestoreapi.com";
@@ -12,6 +14,17 @@ export async function fetchFakeStoreJson<T>(
   path: string,
   isExpected: (value: unknown) => value is T,
 ): Promise<ProductsResult<T>> {
+  if (resolveProductsDataSource() === "fixtures") {
+    const body = readFixtureBody(path);
+    if (body === undefined) {
+      return { ok: false, error: { kind: "http", status: 404 } };
+    }
+    if (!isExpected(body)) {
+      return { ok: false, error: { kind: "invalid_payload" } };
+    }
+    return { ok: true, data: body };
+  }
+
   let response: Response;
   try {
     response = await fetch(`${FAKE_STORE_BASE_URL}${path}`, {

@@ -169,8 +169,9 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 | Ítem | Estado | Nota |
 |---|---|---|
 | Optimización de imágenes externas | 🟡 | `next/image` en `ProductCard` y `ProductDetails`, con `remotePatterns` para `fakestoreapi.com`. Validado solo con imágenes locales de fixtures; imágenes reales de Fake Store pendientes |
-| Lazy loading | 🟡 | Lazy por defecto de `next/image`; `priority` en las 4 primeras tarjetas y en la PDP (DEC-012). Verificado con fixtures; no medido con Lighthouse |
-| Prevención de layout shift | 🟡 | Dimensionado con `fill` en contenedor de aspect ratio fijo. CLS real no medido todavía |
+| Lazy loading | 🟡 | Lazy por defecto de `next/image`; `priority` en las 4 primeras tarjetas y en la PDP (DEC-012). Verificado con fixtures; LCP no visible en la medición de Lighthouse en producción |
+| Prevención de layout shift | 🟡 | Dimensionado con `fill` en contenedor de aspect ratio fijo. CLS no visible en la medición de Lighthouse en producción; pendiente de medir con catálogo real |
+| Lighthouse en producción (Vercel), primera medición | 🟡 | Performance 92 (mobile) y 100 (desktop); Accessibility, Best Practices y SEO 100 en ambos. Medido con Fake Store API caída: la página mostraba el estado de error, no el catálogo. LCP, CLS, TBT y FCP no visibles en la evidencia. Repetir con catálogo real. Evidencia en [README](../README.md#lighthouse-en-producción-primera-medición) |
 | Política de caché y revalidación del catálogo (3600 s) | 🟡 | Decidido en [DEC-009](./DECISIONS.md); implementado en `lib/products/fake-store/client.ts` mediante `next.revalidate` |
 | Implementación de caché en `getProducts` y `getCategories` | 🟡 | Aplicada en `fetchFakeStoreJson`, que usan ambas funciones; comportamiento de Data Cache en runtime pendiente de verificación |
 | Verificación del comportamiento de caché ante fallo de revalidación y de errores no cacheados | ⚪ | Pendiente; se verifica durante la implementación |
@@ -209,7 +210,7 @@ Esta sección separa la validación con fixtures de la validación contra Fake S
 |---|---|---|
 | Repositorio público | 🟢 | Verificado el 2026-10-04 con la API de GitHub: `nickcoga/delosi-ecommerce` responde `"private": false`, `"visibility": "public"` |
 | Sustentación / Code Review (arquitectura, performance y diseño) | ⚪ | Ocurre al cierre del reto |
-| Despliegue y validación final en Vercel | ⚪ | No realizado. El reto lo pide como preferencia ("de preferencia publicado en algún servidor"), no como requisito obligatorio. Decisión pendiente antes de la sustentación |
+| Despliegue y validación final en Vercel | 🟢 | Desplegado en `https://delosi-ecommerce-eight.vercel.app`, verificado con las capturas de Lighthouse del 2026-10-04. El catálogo mostraba el estado de error por la indisponibilidad de Fake Store API. El reto lo pide como preferencia ("de preferencia publicado en algún servidor"). |
 
 ---
 

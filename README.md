@@ -56,6 +56,8 @@ pnpm test
 
 La aplicación en desarrollo queda disponible en [http://localhost:3000](http://localhost:3000). `pnpm start` sirve el build de producción en el mismo puerto por defecto; en producción la aplicación usa siempre Fake Store API, aunque `PRODUCTS_DATA_SOURCE` esté definido.
 
+La versión desplegada en Vercel está disponible en `https://delosi-ecommerce-eight.vercel.app`. Mientras Fake Store API no responda, el catálogo muestra su estado de error; ver [Lighthouse en producción](#lighthouse-en-producción-primera-medición).
+
 ## Datos de desarrollo (fixtures)
 
 Por defecto la aplicación usa Fake Store API (`live`). Para trabajar sin la API, activa los fixtures solo en desarrollo:
@@ -162,6 +164,17 @@ Pendiente de definición. El reto sugiere Jest, React Testing Library, Cypress o
 ## Performance
 
 Parcialmente implementado: `next/image` con dimensiones fijas (sin layout shift), optimización LCP del primer bloque del PLP ([DEC-012](docs/DECISIONS.md)) y caché de datos con `revalidate: 3600`. Pendiente de validación con datos reales.
+
+### Lighthouse en producción (primera medición)
+
+Medición de la aplicación desplegada en Vercel (`https://delosi-ecommerce-eight.vercel.app/products`), realizada el 2026-10-04 mientras Fake Store API respondía 521/522. La página mostraba el estado de error ("No se pudo cargar el catálogo"), no el catálogo, así que **estos valores no representan el rendimiento del catálogo real**.
+
+| Modo | Performance | Accessibility | Best Practices | SEO | LCP / CLS / TBT / FCP |
+|---|---|---|---|---|---|
+| Mobile | 92 | 100 | 100 | 100 | no visible en evidencia |
+| Desktop | 100 | 100 | 100 | 100 | no visible en evidencia |
+
+Evidencia: [lighthouse-mobile.png](docs/evidence/lighthouse-mobile.png) y [lighthouse-desktop.png](docs/evidence/lighthouse-desktop.png). La medición del catálogo real queda pendiente hasta que Fake Store API responda.
 
 ## Iniciativas de proactividad
 

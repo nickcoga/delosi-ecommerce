@@ -406,7 +406,7 @@ El primer bloque visible debe cargarse sin diferirse. Las demás imágenes sigue
 **Consequences:**
 - El número 4 es una constante de la página. Si cambia el número de columnas de la rejilla, conviene revisarlo.
 - Validado: el aviso de LCP desapareció al validar con fixtures (reportado en la validación visual del PLP).
-- La medición de LCP con Lighthouse sobre build de producción sigue pendiente (ver CHECKLIST).
+- Primera medición de Lighthouse en producción (Vercel), realizada el 2026-10-04 mientras Fake Store API devolvía 521/522: la página mostraba el estado de error y no el catálogo. Performance 92 (mobile) y 100 (desktop); LCP no visible en la evidencia ([lighthouse-mobile.png](./evidence/lighthouse-mobile.png), [lighthouse-desktop.png](./evidence/lighthouse-desktop.png)). La medición del LCP del catálogo real queda pendiente hasta que Fake Store API responda (ver CHECKLIST y README).
 
 ---
 

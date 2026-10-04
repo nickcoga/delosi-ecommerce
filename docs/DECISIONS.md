@@ -315,6 +315,54 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 
 ---
 
+## DEC-011 — Fixtures explícitos de desarrollo y test
+
+**Status:** Accepted — implementado y validado visualmente en desarrollo con fixtures. La validación contra Fake Store API real sigue pendiente.
+
+**Context:**
+Fake Store API ha estado no disponible (HTTP 521/522) durante la implementación del PLP y la PDP. Sin datos de éxito no se pueden validar visualmente el listado, los filtros, la PDP ni el flujo del carrito con datos reales.
+
+**Decision:**
+1. Fixtures explícitos, activados con `PRODUCTS_DATA_SOURCE=fixtures` y solo fuera de producción. El modo por defecto es `live`.
+2. Los fixtures reemplazan únicamente el transporte de Fake Store API. Pasan por el mismo guard DTO, el mismo mapper y el mismo catálogo y PDP.
+3. Producción usa siempre `live`, aunque la variable esté definida.
+4. Los fixtures no son un fallback. Ante un fallo de Fake Store API la aplicación sigue mostrando el error correspondiente.
+5. No se introduce ninguna dependencia nueva: ni MSW, ni React Query, ni otro cliente HTTP, ni una arquitectura paralela.
+
+**Rationale:**
+Permite validar la interfaz y los flujos de forma determinista, sin depender de la disponibilidad externa, y mantiene una única ruta de transformación DTO → mapper → `Product`. No oculta fallos de integración porque el fallback automático está prohibido.
+
+**Alternativas descartadas:**
+- Fallback automático a fixtures cuando falla la API: oculta errores reales de integración.
+- MSW o interceptores de red: añaden una dependencia y una capa de simulación que no hace falta.
+- Datos mock dentro de los componentes: duplicarían la UI y eludirían el mapper.
+
+**Consequences:**
+- Trade-off: el modo fixtures no valida la disponibilidad ni el contrato real de Fake Store API. La integración live debe validarse cuando la API responda.
+- Las imágenes de fixtures son locales (`public/fixtures/products/`) y no sustituyen las imágenes reales de Fake Store API.
+- Los tests del catálogo usan el runner nativo de Node (`node:test`) con un loader de alias, sin dependencias nuevas. La elección de herramienta de testing sigue abierta.
+
+---
+
+## DEC-012 — Optimización del LCP del primer bloque del PLP
+
+**Status:** Accepted — implementado.
+
+**Context:**
+En el listado, la primera tarjeta es la imagen de mayor tamaño visible al cargar la página y, por tanto, el LCP. Por defecto `next/image` aplica lazy loading, y en desarrollo Next.js emitía un aviso de LCP.
+
+**Decision:**
+`ProductCard` acepta `priority?: boolean` y pasa esa prop a `next/image`. La página marca con `priority` las primeras 4 tarjetas del listado. El resto de tarjetas mantiene el lazy loading por defecto.
+
+**Rationale:**
+El primer bloque visible debe cargarse sin diferirse. Las demás imágenes siguen diferidas para no competir con el LCP.
+
+**Consequences:**
+- El número 4 es una constante de la página. Si cambia el número de columnas de la rejilla, conviene revisarlo.
+- Validado: el aviso de LCP desapareció al validar con fixtures (reportado en la validación visual del PLP).
+
+---
+
 ## Plantilla para futuras decisiones
 
 Usar este formato al registrar cada una de las siguientes decisiones pendientes (ver [ARCHITECTURE.md](./ARCHITECTURE.md) para el contexto de cada una):

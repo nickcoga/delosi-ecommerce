@@ -85,12 +85,43 @@ Fake Store API no estaba disponible durante este checkpoint (HTTP 521/522). Las 
 | PDP: estado de error sin convertirlo en 404 ni en producto vacío | PASS (API caída) |
 | Carrito: primera adición, incremento, persistencia (store sin cambios) | PASS (validado con el store compilado) |
 | Validación visual de la PDP en estado success | PENDIENTE (requiere datos reales) |
-| Validación de la PLP con productos reales (success, empty, categorías) | PENDIENTE (requiere datos reales) |
+| Validación visual de la PLP con fixtures (success, empty, filtros, orden, responsive) | PASS (fixtures) |
+| Validación de la PLP contra Fake Store API real (success, empty, categorías) | PENDIENTE (API caída) |
 | Comportamiento real de Fake Store ante `200 + null` | PENDIENTE (requiere la API) |
 | Clic real en "Agregar al carrito" de la PDP y contador del header | PENDIENTE (requiere datos reales) |
 | Verificación en runtime de la Data Cache ante fallo de revalidación | PENDIENTE (requiere la API) |
 
 > Fake Store API se encuentra temporalmente no disponible durante este checkpoint, por lo que las validaciones que requieren datos reales de éxito quedan pendientes hasta que el servicio vuelva a responder.
+
+## Bloque fixtures, validación visual del PLP y LCP
+
+Esta sección separa la validación con fixtures de la validación contra Fake Store API real. Los fixtures no demuestran que la integración live funcione.
+
+**Validación con fixtures (desarrollo y test)**
+
+| Ítem | Estado | Nota |
+|---|---|---|
+| Fixtures de desarrollo/test explícitos (`PRODUCTS_DATA_SOURCE=fixtures`, fuera de producción) | 🟢 | Ver [DEC-011](./DECISIONS.md) |
+| Producción fuerza `live` aunque la variable esté definida | 🟢 | Ver [DEC-011](./DECISIONS.md) |
+| Fixtures pasan por el mismo guard DTO y el mismo mapper | 🟢 | Sin fallback automático |
+| 8 productos fixture e imágenes locales (`public/fixtures/products/`) | 🟢 | Imágenes locales; no sustituyen las de Fake Store |
+| PLP visual con fixtures: success, cards, imágenes, responsive desktop y mobile | 🟢 | Validado visualmente |
+| Filtros, búsqueda y orden con fixtures | 🟢 | Validación reportada |
+| Add to Cart con el mismo `Product` | 🟢 | Validación reportada |
+| Optimización LCP: `priority` en las 4 primeras tarjetas ([DEC-012](./DECISIONS.md)) | 🟢 | Aviso de LCP resuelto |
+| Tests del catálogo: 19/19 | 🟢 | Runner `node:test`, sin dependencias nuevas |
+| PDP visual con fixtures | 🟡 | Pendiente de confirmación |
+| Navegación Back/Forward y refresh con fixtures | 🟡 | No reportado como validado |
+
+**Validación contra Fake Store API real (pendiente)**
+
+| Ítem | Estado | Nota |
+|---|---|---|
+| PLP con datos reales: success, empty y categorías | ⚪ | La API continúa caída |
+| PDP con datos reales (success y metadata real) | ⚪ | La API continúa caída |
+| Comportamiento real ante `200 + null` | ⚪ | Pendiente de verificar |
+| Clic real en "Agregar al carrito" con datos reales | ⚪ | Pendiente |
+| Data Cache ante fallo de revalidación | ⚪ | Pendiente |
 
 ## 2. Requisitos técnicos / arquitectura
 

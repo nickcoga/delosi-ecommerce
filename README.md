@@ -50,6 +50,24 @@ pnpm lint
 
 La aplicación en desarrollo queda disponible en [http://localhost:3000](http://localhost:3000).
 
+## Datos de desarrollo (fixtures)
+
+Por defecto la aplicación usa Fake Store API (`live`). Para trabajar sin la API, activa los fixtures solo en desarrollo:
+
+PowerShell:
+
+```powershell
+$env:PRODUCTS_DATA_SOURCE="fixtures"; pnpm dev
+```
+
+Git Bash:
+
+```bash
+PRODUCTS_DATA_SOURCE=fixtures pnpm dev
+```
+
+Para volver al modo live, arranca el servidor sin la variable (`pnpm dev`). En producción la aplicación usa siempre Fake Store API. Los fixtures no son un requisito de producción.
+
 ## Estructura inicial del proyecto
 
 ```
@@ -114,6 +132,12 @@ Ver detalle completo y seguimiento en [docs/CHECKLIST.md](docs/CHECKLIST.md).
 El stack base (Next.js App Router, TypeScript, Tailwind CSS, Fake Store API, Git/GitHub) ya está confirmado durante este bootstrap y registrado en [docs/DECISIONS.md](docs/DECISIONS.md). Además, ya existen decisiones iniciales de diseño/arquitectura — como el enfoque Server-first con Server Components para la carga inicial, la integración con Fake Store API y la separación conceptual entre UI, dominio/servicios y acceso a datos —, documentadas con su contexto en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Esto no implica que todas las decisiones de implementación del reto estén cerradas: el estado del carrito quedó decidido e implementado ([DEC-007](docs/DECISIONS.md)); el acceso a datos del PLP está decidido en server-side ([DEC-008](docs/DECISIONS.md)) y la política de caché y revalidación de 3600 segundos está decidida ([DEC-009](docs/DECISIONS.md)); el testing y la estructura final de carpetas por dominio siguen pendientes. El contrato conceptual del PLP está en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Testing
+
+Tests del catálogo con un runner temporal sin dependencias (`node:test`), pendiente de la decisión de herramienta:
+
+```bash
+node --experimental-strip-types --import ./tests/register.mjs --test tests/products.test.ts
+```
 
 Pendiente de definición. El reto sugiere Jest, React Testing Library, Cypress o Playwright como herramientas posibles. La estrategia definitiva (unitario vs. integración, alcance, herramienta) se registrará en [docs/DECISIONS.md](docs/DECISIONS.md) cuando se tome.
 

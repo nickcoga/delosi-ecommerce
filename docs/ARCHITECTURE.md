@@ -50,6 +50,27 @@ Este documento describe la **arquitectura objetivo** del reto: la organización 
 
 **Pendiente:** la forma concreta de la capa de acceso a datos (ubicación del código, manejo de errores de red, tipado de las respuestas) se definirá en la implementación.
 
+## Fuente de datos: live y fixtures
+
+Live (por defecto y en producción):
+
+```text
+Fake Store API → validación DTO → mapper → Product → catálogo / PDP
+```
+
+Fixtures (solo desarrollo y test, activado explícitamente):
+
+```text
+Fixture DTO → la misma validación DTO → el mismo mapper → Product → el mismo catálogo / PDP
+```
+
+- Selección en `lib/products/data-source.ts`: `PRODUCTS_DATA_SOURCE=live` es el valor por defecto; `PRODUCTS_DATA_SOURCE=fixtures` activa los fixtures.
+- Producción usa siempre `live`, aunque la variable esté definida.
+- Los fixtures son una fuente explícita de desarrollo y test, **no un fallback**. Un fallo real de Fake Store API (`http`, `network`, `timeout`, `invalid_payload`) sigue siendo un error y nunca se sustituye por fixtures.
+- Implementación: en `fetchFakeStoreJson` (`lib/products/fake-store/client.ts`), el modo fixtures toma el cuerpo de `lib/products/fixtures/` y aplica los mismos guards. La rama live (fetch con `revalidate: 3600` y timeout de 10 s) no cambia.
+- Los fixtures son 8 productos (`lib/products/fixtures/products.ts`) con imágenes locales en `public/fixtures/products/`. Permiten validar visualmente PLP y PDP cuando Fake Store API no está disponible. No son una recomendación de producción ni sustituyen las imágenes reales de Fake Store API.
+- Limitación: el modo fixtures no valida la disponibilidad ni el contrato real de Fake Store API. La integración live debe validarse cuando la API responda.
+
 ## Estrategia prevista para PLP
 
 Implementada en el checkpoint PLP + PDP. La validación de los estados success y empty con datos reales queda pendiente de Fake Store API:
@@ -60,6 +81,8 @@ Implementada en el checkpoint PLP + PDP. La validación de los estados success y
 - Loading state con `loading.tsx` estándar del App Router, con dos skeletons independientes: `app/products/loading.tsx` (PLP) y `app/products/[id]/loading.tsx` (PDP). El de `[id]` es necesario porque el `loading.tsx` de `products/` también aplica a sus segmentos hijos. Se usa únicamente Tailwind; la animación es `motion-safe:animate-pulse`, que respeta `prefers-reduced-motion`. Accesibilidad: el contenedor tiene `role="status"` con texto oculto ("Cargando productos" o "Cargando producto") y los bloques visuales llevan `aria-hidden="true"`. Suspense granular no se introduce en esta fase; queda como opción C de la propuesta. Limitaciones actuales: la validación visual desktop y mobile, el comportamiento y el foco durante navegación de filtros, y el CLS real quedan pendientes; requieren datos success de Fake Store API.
 - **Acceso a datos ([DEC-008](./DECISIONS.md), decidido):** los datos se obtienen en el servidor, desde Server Components, con las capacidades nativas de Next.js. No se usa React Query en esta fase.
 - **Caché y revalidación ([DEC-009](./DECISIONS.md), decidido e implementado):** caché de datos de Next.js mediante `fetch` con `next.revalidate: 3600`, aplicada en `fetchFakeStoreJson` y compartida por productos, categorías y detalle. La verificación en runtime del comportamiento ante fallo de revalidación queda pendiente.
+
+Optimización de imágenes del primer bloque: `ProductCard` acepta `priority?: boolean`. Las primeras 4 tarjetas del listado lo reciben, porque forman el primer bloque visible y su imagen suele ser el LCP. El resto mantiene el lazy loading por defecto. Ver [DEC-012](./DECISIONS.md).
 
 ## Contrato conceptual del PLP
 
@@ -364,7 +387,7 @@ Tomadas durante la implementación, sin abrir una DEC nueva:
 
 Explícitamente no resueltas por este documento, a definir y registrar en [DECISIONS.md](./DECISIONS.md):
 
-- Validación de los estados success y empty con datos reales, y clic real en "Agregar al carrito" (bloqueado por Fake Store API).
+- Validación live (Fake Store API) de los estados success y empty del PLP, y clic real en "Agregar al carrito" de la PDP. Con fixtures, PLP, filtros y búsqueda están validados visualmente; la PDP con fixtures queda pendiente de confirmación, y Back/Forward y refresh no se han reportado como validados.
 - Comportamiento real de Fake Store API ante ids inexistentes: `404` frente a `200 + null` (pendiente de verificar).
 - Verificación en runtime del comportamiento de la Data Cache ante fallos de revalidación ([DEC-009](./DECISIONS.md)).
 - Retry manual y fallback de demostración: diseño documentado; implementación pendiente.

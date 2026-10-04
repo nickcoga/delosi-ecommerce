@@ -7,7 +7,13 @@ const priceFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: Product;
+  priority?: boolean;
+}) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-lg border border-black/[.08] bg-white">
       <div className="relative aspect-square w-full bg-zinc-50">
@@ -15,6 +21,7 @@ export function ProductCard({ product }: { product: Product }) {
           src={product.imageUrl}
           alt={product.title}
           fill
+          priority={priority}
           sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
           className="object-contain p-6"
         />

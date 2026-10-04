@@ -63,9 +63,9 @@ export default async function ProductsPage({
         </section>
       ) : (
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {result.data.map((product) => (
+          {result.data.map((product, index) => (
             <li key={product.id}>
-              <ProductCard product={product} />
+              <ProductCard product={product} priority={index < 4} />
             </li>
           ))}
         </ul>

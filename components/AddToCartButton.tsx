@@ -14,7 +14,7 @@ export function AddToCartButton({ product }: AddToCartButtonProps) {
     <button
       type="button"
       onClick={() => addItem(product)}
-      className="flex h-12 items-center justify-center rounded-full bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+      className="flex h-12 cursor-pointer items-center justify-center rounded-full bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
     >
       Agregar al carrito
     </button>

@@ -63,6 +63,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-10">
+      <Link
+        href="/products"
+        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-zinc-700 underline-offset-4 hover:text-zinc-950 hover:underline"
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 16 16"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M13 8H3M7 4L3 8l4 4" />
+        </svg>
+        Volver al catálogo
+      </Link>
       <ProductDetails product={result.data} />
     </main>
   );

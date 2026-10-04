@@ -86,7 +86,8 @@ delosi-ecommerce/
 **Fase actual: diseño del PLP.**
 
 - Implementado: bootstrap de Next.js y estado global del carrito con contador en el Header (DEC-007), validado manualmente mediante una demo temporal en `app/page.tsx`.
-- Diseño aprobado, sin implementar: contrato de URL del PLP (`category`, `q`, `sort`) ([DEC-010](docs/DECISIONS.md)), parser, capa de acceso a datos, modelo `Product`, estados y retry manual.
+- Implementado en `lib/products/` (sin UI): contrato de URL del PLP (`category`, `q`, `sort`), parser, modelo `Product`, capa de acceso a datos con caché de 3600 s y normalización de errores ([DEC-010](docs/DECISIONS.md)). Pendiente de validación contra la API real.
+- Diseño aprobado, sin implementar: UI del PLP, estados visibles (loading, empty, error) y retry manual.
 - Decidido: acceso a datos server-side con Server Components y capacidades nativas de Next.js; React Query no se incorpora en esta fase ([DEC-008](docs/DECISIONS.md)).
 - Decidido: caché de datos y revalidación de 3600 segundos para productos y categorías ([DEC-009](docs/DECISIONS.md)). Implementación pendiente; no existe caché en código todavía.
 - Sin implementar: PLP, PDP, testing y iniciativas de proactividad.

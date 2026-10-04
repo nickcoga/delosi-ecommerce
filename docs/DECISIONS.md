@@ -289,7 +289,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 **Decision:**
 1. Ruta canónica `/products`, con los query params `category`, `q` y `sort`, modelados conceptualmente como `ProductsQuery`.
 2. La URL es la fuente de verdad del estado del catálogo. Zustand no almacena filtros, búsqueda, orden ni productos; permanece reservado al carrito ([DEC-007](#dec-007--estado-global-y-persistencia-del-carrito)).
-3. `category`: se aplica si corresponde a una categoría válida; si es inválida se ignora. Nunca produce 404 ni 500.
+3. `category`: se aplica si corresponde a una categoría presente en el catálogo de productos obtenido; si no, se ignora. Nunca produce 404 ni 500.
 4. `q`: búsqueda case-insensitive sobre `Product.title`. No se amplía a descripción ni otros campos en esta fase.
 5. `sort`: valores `price-asc` y `price-desc`. Los valores desconocidos se ignoran.
 6. Los filtros se combinan con AND, en el orden categoría → búsqueda → orden.
@@ -309,7 +309,7 @@ El PLP necesita un contrato de parámetros estable y compartible, separado de la
 - El retry manual evita múltiples solicitudes automáticas innecesarias ante errores como el 522 observado.
 
 **Consequences:**
-- No existen todavía `/products`, el parser, `getProducts`, `getCategories`, el mapper ni los tipos. Son trabajo de implementación posterior.
+- La capa de datos (tipos, DTO, mapper, parser, `getProducts`, `getCategories`) está implementada en `lib/products/`. La ruta `/products` y su UI todavía no existen.
 - La política de caché queda fuera de este registro y se rige por [DEC-009](#dec-009--política-de-caché-y-revalidación-del-catálogo).
 - Cualquier cambio en el contrato de parámetros requiere actualizar este registro.
 

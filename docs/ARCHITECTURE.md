@@ -87,7 +87,7 @@ ProductsQuery
 
 | Parámetro | Significado | Si está ausente | Si el valor es inválido |
 |---|---|---|---|
-| `category` | Filtra por una categoría de Fake Store API. Los valores válidos son los devueltos por `GET /products/categories`. | Sin filtro de categoría: se muestran todos los productos. | Se ignora (equivale a ausente). |
+| `category` | Filtra por una categoría de Fake Store API. Una categoría es válida si aparece entre las categorías de los productos del catálogo obtenido; no se hace una llamada adicional a `GET /products/categories` para validar la query. | Sin filtro de categoría: se muestran todos los productos. | Se ignora (equivale a ausente). |
 | `q` | Búsqueda textual sobre `Product.title`, por coincidencia parcial y sin distinguir mayúsculas. No se amplía a la descripción ni a otros campos en esta fase. | Sin búsqueda. | Se normaliza; si queda vacío, equivale a ausente. |
 | `sort` | Ordenamiento por precio. Valores soportados: `price-asc` y `price-desc`. | Orden por defecto (el que devuelve la fuente, sin reordenar). | Se ignora y se usa el orden por defecto. |
 
@@ -106,7 +106,7 @@ ProductsQuery
 - Los parámetros fuera de este contrato se ignoran.
 - Si un parámetro aparece varias veces, se considera solo el primer valor (*propuesto*).
 - `q`: se eliminan espacios al inicio y al final, se colapsan los espacios internos, y la comparación no distingue mayúsculas. Tiene una longitud máxima razonable (valor exacto pendiente).
-- `category`: si corresponde a una categoría válida, se aplica; si es inválida, se ignora. Nunca produce 404 ni 500.
+- `category`: si corresponde a una categoría presente en el catálogo obtenido, se aplica; si no, se ignora y la query se trata como si no tuviera categoría. Nunca produce 404 ni 500.
 - `sort`: solo `price-asc` y `price-desc`; los valores desconocidos se ignoran.
 - Un valor inválido nunca produce 404 ni 500: la página siempre renderiza, usando el valor por defecto del parámetro afectado.
 
@@ -116,7 +116,7 @@ ProductsQuery
 
 ## Parser de query params
 
-Intención (no implementada):
+Implementado en `lib/products/parse-query.ts`:
 
 ```text
 URL Search Params
@@ -152,7 +152,7 @@ PLP
 
 ## Modelo de dominio `Product`
 
-Conceptual; no implementado.
+Implementado en `lib/products/types.ts`.
 
 - `Product` es el modelo que usan el dominio y la UI. Campos: `id`, `title`, `price`, `description`, `category`, `imageUrl`, `rating.rate` y `rating.count`.
 - No incluye ningún campo que indique la fuente de los datos (por ejemplo, `source`).
@@ -164,7 +164,7 @@ Conceptual; no implementado.
 
 ## Acceso a datos
 
-Cadena de llamadas prevista (no implementada):
+Cadena de llamadas implementada en `lib/products/catalog.ts` (la página `/products` todavía no la usa):
 
 ```text
 Products Page
@@ -183,7 +183,7 @@ Fake Store API
 
 ## Capas conceptuales del PLP
 
-No implementadas. Responsabilidades:
+Responsabilidades (la capa de datos está implementada en `lib/products/`; la UI del PLP no):
 
 - **Acceso a datos (data access):** HTTP hacia Fake Store API desde el servidor ([DEC-008](./DECISIONS.md)), DTO, mapper a `Product`, y normalización de errores (red, timeout, 5xx, 522) en resultados controlados. La caché y revalidación de 3600 segundos se aplican en esta capa ([DEC-009](./DECISIONS.md)).
 - **Routing y Server Components (`app/`):** lee `searchParams`, llama a `parseProductsQuery()` y `getProducts()`, y compone la página.

@@ -30,14 +30,14 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Server Components para carga/procesamiento inicial | 🔵 | Decisión de arquitectura tomada (server-first, ver [ARCHITECTURE.md](./ARCHITECTURE.md)); sin código todavía |
 | Filtrado por categoría | 🔵 | Mecanismo decidido: URL Search Params |
 | Búsqueda por texto | 🔵 | Mecanismo decidido: URL Search Params |
-| Ordenamiento por criterio de negocio | 🔵 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)); sin código |
-| Integración `GET /products` | 🔵 | Acceso server-side decidido en [DEC-008](./DECISIONS.md); sin código |
-| Integración `GET /products/categories` | 🔵 | Acceso server-side decidido en [DEC-008](./DECISIONS.md); sin código |
-| Normalización de errores de API en estados controlados (error, empty) | 🔵 | Decidido en [DEC-008](./DECISIONS.md) y [ARCHITECTURE.md](./ARCHITECTURE.md); sin código |
+| Ordenamiento por criterio de negocio | 🟡 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)). Implementado en `lib/products/apply-query.ts`; sin UI |
+| Integración `GET /products` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente (la API respondió 522 durante la verificación) |
+| Integración `GET /products/categories` | 🟡 | Implementada en `lib/products/catalog.ts` ([DEC-008](./DECISIONS.md)); validación contra la API real pendiente |
+| Normalización de errores de API en estados controlados (error, empty) | 🟡 | Implementada en `lib/products/fake-store/client.ts`; probada con servidor local y fetch simulado |
 | Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🔵 | Aprobado conceptualmente ([DEC-010](./DECISIONS.md)); sin código |
-| Parser de query params (`parseProductsQuery()`) | 🔵 | Diseño documentado; sin código |
-| Capa de acceso a datos (`getProducts`, `getCategories`) | 🔵 | Diseño documentado; sin código |
-| Modelo de dominio `Product` independiente del DTO de Fake Store API | 🔵 | Campos aprobados; mapper `FakeStoreProductDTO` → `Product` sin implementar |
+| Parser de query params (`parseProductsQuery()`) | 🟡 | Implementado en `lib/products/parse-query.ts`; probado con casos de borde |
+| Capa de acceso a datos (`getProducts`, `getCategories`) | 🟡 | Implementada en `lib/products/catalog.ts`; validación contra la API real pendiente |
+| Modelo de dominio `Product` independiente del DTO de Fake Store API | 🟡 | Implementado en `lib/products/types.ts` y `lib/products/fake-store/mapper.ts` |
 | Estados del PLP (loading, success, empty, error) | 🔵 | Comportamiento documentado; implementación técnica pendiente |
 | Retry manual desde la UI en estado error | 🔵 | Diseño documentado; sin retries automáticos; sin código |
 
@@ -87,7 +87,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Escalabilidad y colaboración entre desarrolladores | 🔵 | Objetivo de diseño adoptado; se valida con la implementación y el code review |
 | SOLID / Clean Code | 🔵 | Principio adoptado como guía de implementación; ver punto ambiguo #2 |
 | Estructura final de carpetas por dominio | ⚪ | Decisión abierta — ver [ARCHITECTURE.md](./ARCHITECTURE.md) |
-| Estrategia de acceso a datos del PLP (Server Components + capacidades nativas de Next.js; React Query no incorporado) | 🔵 | Decidido en [DEC-008](./DECISIONS.md); sin código |
+| Estrategia de acceso a datos del PLP (Server Components + capacidades nativas de Next.js; React Query no incorporado) | 🟡 | Decidido en [DEC-008](./DECISIONS.md); implementado en `lib/products/` |
 
 ### Estado del carrito (decidido e implementado)
 
@@ -108,8 +108,8 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Optimización de imágenes externas | 🔵 | Vía `next/image`, ya disponible en el stack decidido; sin implementar |
 | Lazy loading | 🔵 | Vía `next/image` / carga diferida de componentes; sin implementar |
 | Prevención de layout shift | 🔵 | Vía dimensionado explícito de imágenes (`next/image`); sin implementar |
-| Política de caché y revalidación del catálogo (3600 s) | 🔵 | Decidido y documentado en [DEC-009](./DECISIONS.md); sin implementar |
-| Implementación de caché en `getProducts` y `getCategories` | 🔵 | Planificada tras DEC-009; sin código |
+| Política de caché y revalidación del catálogo (3600 s) | 🟡 | Decidido en [DEC-009](./DECISIONS.md); implementado en `lib/products/fake-store/client.ts` mediante `next.revalidate` |
+| Implementación de caché en `getProducts` y `getCategories` | 🟡 | Aplicada en `fetchFakeStoreJson`, que usan ambas funciones; comportamiento de Data Cache en runtime pendiente de verificación |
 | Verificación del comportamiento de caché ante fallo de revalidación y de errores no cacheados | ⚪ | Pendiente; se verifica durante la implementación |
 
 > Nota: la configuración **avanzada** de caché/políticas de revalidación es una iniciativa de proactividad adicional (ver sección 5), distinta de la estrategia básica de arriba, que sí forma parte del alcance mínimo.

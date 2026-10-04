@@ -30,13 +30,16 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Server Components para carga/procesamiento inicial | 🔵 | Decisión de arquitectura tomada (server-first, ver [ARCHITECTURE.md](./ARCHITECTURE.md)); sin código todavía |
 | Filtrado por categoría | 🔵 | Mecanismo decidido: URL Search Params |
 | Búsqueda por texto | 🔵 | Mecanismo decidido: URL Search Params |
-| Ordenamiento por criterio de negocio | 🔵 | Mecanismo decidido: URL Search Params (`sort`). Criterio propuesto: precio asc/desc, pendiente de confirmación (ver [ARCHITECTURE.md](./ARCHITECTURE.md), contrato del PLP) |
+| Ordenamiento por criterio de negocio | 🔵 | Mecanismo: URL Search Params (`sort`). Criterio aprobado: precio, `price-asc` y `price-desc` ([DEC-010](./DECISIONS.md)); sin código |
 | Integración `GET /products` | 🔵 | Acceso server-side decidido en [DEC-008](./DECISIONS.md); sin código |
 | Integración `GET /products/categories` | 🔵 | Acceso server-side decidido en [DEC-008](./DECISIONS.md); sin código |
 | Normalización de errores de API en estados controlados (error, empty) | 🔵 | Decidido en [DEC-008](./DECISIONS.md) y [ARCHITECTURE.md](./ARCHITECTURE.md); sin código |
-| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🔵 | Contrato conceptual documentado en [ARCHITECTURE.md](./ARCHITECTURE.md); sin código |
-| Modelo de dominio `Product` independiente del DTO de Fake Store API | 🔵 | Documentado conceptualmente; sin código |
+| Ruta `/products` y contrato de URL (`category`, `q`, `sort`) | 🔵 | Aprobado conceptualmente ([DEC-010](./DECISIONS.md)); sin código |
+| Parser de query params (`parseProductsQuery()`) | 🔵 | Diseño documentado; sin código |
+| Capa de acceso a datos (`getProducts`, `getCategories`) | 🔵 | Diseño documentado; sin código |
+| Modelo de dominio `Product` independiente del DTO de Fake Store API | 🔵 | Campos aprobados; mapper `FakeStoreProductDTO` → `Product` sin implementar |
 | Estados del PLP (loading, success, empty, error) | 🔵 | Comportamiento documentado; implementación técnica pendiente |
+| Retry manual desde la UI en estado error | 🔵 | Diseño documentado; sin retries automáticos; sin código |
 
 ### PDP (Product Detail Page)
 
@@ -105,7 +108,7 @@ Este documento es el **checklist operativo** del reto: se actualiza durante todo
 | Optimización de imágenes externas | 🔵 | Vía `next/image`, ya disponible en el stack decidido; sin implementar |
 | Lazy loading | 🔵 | Vía `next/image` / carga diferida de componentes; sin implementar |
 | Prevención de layout shift | 🔵 | Vía dimensionado explícito de imágenes (`next/image`); sin implementar |
-| Política de caché y revalidación de datos del PLP | ⚪ | Pendiente de una decisión específica posterior. El acceso server-side está decidido en [DEC-008](./DECISIONS.md); no se fija ningún valor de `revalidate` |
+| Política de caché y revalidación del catálogo | ⚪ | Pendiente en [DEC-009](./DECISIONS.md). El acceso server-side está decidido en [DEC-008](./DECISIONS.md); no se fija ningún valor de `revalidate` |
 
 > Nota: la configuración **avanzada** de caché/políticas de revalidación es una iniciativa de proactividad adicional (ver sección 5), distinta de la estrategia básica de arriba, que sí forma parte del alcance mínimo.
 

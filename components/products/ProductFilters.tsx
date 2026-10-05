@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 
 import { buildProductsHref } from "@/components/products/product-url";
 import type { ProductsQuery } from "@/lib/products/types";
@@ -25,7 +25,7 @@ export function ProductFilters({ query, categories }: ProductFiltersProps) {
     });
   }
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
+  function handleSearch(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     navigate({ q: String(formData.get("q") ?? "") });
